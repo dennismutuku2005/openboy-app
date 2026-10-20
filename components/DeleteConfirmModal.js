@@ -57,12 +57,12 @@ export default function DeleteConfirmModal() {
           Are you sure you want to remove this monitor? All scheduled execution runs, latency history, and uptime logs will be permanently deleted.
         </p>
 
-        <div className="flex items-center justify-end gap-3 pt-2">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3 pt-2">
           <button
             type="button"
             disabled={isDeleting}
             onClick={closeDeleteDialog}
-            className="px-4 py-2.5 rounded-lg text-xs font-semibold bg-[#212717] hover:bg-[#2b331f] text-zinc-300 hover:text-white border border-[#333d23] transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-lg text-xs font-semibold bg-[#212717] hover:bg-[#2b331f] text-zinc-300 hover:text-white border border-[#333d23] transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center"
           >
             Cancel
           </button>
@@ -70,7 +70,7 @@ export default function DeleteConfirmModal() {
             type="button"
             disabled={isDeleting}
             onClick={handleConfirm}
-            className="px-4 py-2.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center gap-2 disabled:opacity-60"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             <span>{isDeleting ? "Deleting..." : "Delete monitor"}</span>

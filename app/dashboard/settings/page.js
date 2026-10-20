@@ -134,7 +134,7 @@ export default function SettingsPage() {
       <button
         type="button"
         onClick={handleSave}
-        className="px-5 py-2.5 bg-[#ffd600] hover:bg-[#eed000] text-black font-semibold text-xs rounded-md transition-all cursor-pointer shadow"
+        className="w-full sm:w-auto px-6 py-3 sm:py-2.5 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs rounded-lg transition-all cursor-pointer shadow flex items-center justify-center"
       >
         Save Settings
       </button>

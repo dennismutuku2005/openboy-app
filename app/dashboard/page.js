@@ -181,8 +181,22 @@ export default function DashboardMainPage() {
           </p>
         </div>
 
-        {/* View Tabs */}
-        <div className="flex items-center gap-1 bg-[#1a1f12] p-1 rounded-lg border border-[#27301b] self-start md:self-auto">
+        {/* Mobile View Dropdown (Full width left to right) */}
+        <div className="md:hidden w-full">
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="w-full bg-[#1a1f12] border border-[#27301b] text-white text-xs rounded-lg px-3 py-2.5 font-medium focus:outline-none focus:border-[#ffd600] cursor-pointer"
+          >
+            <option value="schedules">Schedule Table ({monitors.length})</option>
+            <option value="templates">Templates ({scheduleTemplates.length})</option>
+            <option value="logs">Live Logs ({logs.length})</option>
+            <option value="errors">Errors ({errorLogs.length})</option>
+          </select>
+        </div>
+
+        {/* Desktop View Tabs */}
+        <div className="hidden md:flex items-center gap-1 bg-[#1a1f12] p-1 rounded-lg border border-[#27301b]">
           <button
             type="button"
             onClick={() => setActiveTab("schedules")}
@@ -250,7 +264,24 @@ export default function DashboardMainPage() {
       {/* Filter Row & Search Bar */}
       {activeTab === "schedules" && (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-1.5">
+          {/* Mobile Filter Dropdown (Full width left to right) */}
+          <div className="md:hidden w-full">
+            <select
+              value={activeFilter}
+              onChange={(e) => setActiveFilter(e.target.value)}
+              className="w-full bg-[#1b2013] border border-[#2b341f] text-white text-xs rounded-lg px-3 py-2.5 font-medium focus:outline-none focus:border-[#ffd600] cursor-pointer"
+            >
+              <option value="all">All Schedules ({monitors.length})</option>
+              <option value="active">Active ({monitors.filter((m) => m.status === "active").length})</option>
+              <option value="10s">10s High-Freq ({monitors.filter((m) => m.interval === "10s").length})</option>
+              <option value="30s">30s Standard ({monitors.filter((m) => m.interval === "30s").length})</option>
+              <option value="10m">10m Batchers ({monitors.filter((m) => m.interval === "10m").length})</option>
+              <option value="failing">Failing ({monitors.filter((m) => m.status === "failing").length})</option>
+            </select>
+          </div>
+
+          {/* Desktop Filter Buttons */}
+          <div className="hidden md:flex flex-wrap items-center gap-1.5">
             {[
               { id: "all", label: `All (${monitors.length})` },
               { id: "active", label: "Active" },
@@ -273,18 +304,18 @@ export default function DashboardMainPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:flex-initial w-full md:w-64">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
                 type="text"
                 placeholder="Search by name or URL..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] w-full sm:w-64"
+                className="pl-8 pr-3 py-2 md:py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] w-full"
               />
             </div>
-            <div className="text-xs text-zinc-400 font-mono whitespace-nowrap">
+            <div className="text-xs text-zinc-400 font-mono whitespace-nowrap hidden sm:block">
               <span>{filteredMonitors.length} total</span>
             </div>
           </div>
@@ -498,17 +529,17 @@ export default function DashboardMainPage() {
               <strong className="text-white font-semibold block">Quick Natural Language Scheduler</strong>
               <span className="text-zinc-500">e.g. &quot;every 10 seconds&quot; or &quot;every 10 minutes&quot;</span>
             </div>
-            <form onSubmit={handleApplyNaturalLanguage} className="flex gap-2 w-full sm:w-auto">
+            <form onSubmit={handleApplyNaturalLanguage} className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <input
                 type="text"
                 value={naturalScheduleInput}
                 onChange={(e) => setNaturalScheduleInput(e.target.value)}
                 placeholder="every 10s, every 10m..."
-                className="px-3.5 py-1.5 text-xs bg-[#12150c] text-white border border-[#2c371d] rounded-lg focus:outline-none focus:border-[#ffd600] placeholder:text-zinc-600 flex-1 sm:w-64"
+                className="px-3.5 py-2.5 sm:py-1.5 text-xs bg-[#12150c] text-white border border-[#2c371d] rounded-lg focus:outline-none focus:border-[#ffd600] placeholder:text-zinc-600 w-full sm:w-64"
               />
               <button
                 type="submit"
-                className="px-4 py-1.5 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs rounded-lg transition-all cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-1.5 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center justify-center"
               >
                 Schedule
               </button>

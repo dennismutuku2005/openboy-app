@@ -408,11 +408,12 @@ export default function IncidentsPage() {
 
       {/* Filter Row & Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#242b18] pb-3">
-        <div className="flex items-center gap-2">
+        <div className="w-full sm:w-auto">
+          <label className="text-[11px] text-zinc-400 font-mono mb-1 block sm:hidden">Filter Severity</label>
           <select
             value={filterSeverity}
             onChange={(e) => setFilterSeverity(e.target.value)}
-            className="px-3 py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-zinc-300 focus:outline-none focus:border-[#ffd600]"
+            className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white focus:outline-none focus:border-[#ffd600]"
           >
             <option value="all">All Severities</option>
             <option value="p1">P1 - Critical</option>
@@ -421,14 +422,14 @@ export default function IncidentsPage() {
           </select>
         </div>
 
-        <div className="relative">
+        <div className="relative w-full sm:w-64">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
             placeholder="Search incident records..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 pr-3 py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] w-64"
+            className="pl-8 pr-3 py-2 sm:py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] w-full"
           />
         </div>
       </div>

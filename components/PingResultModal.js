@@ -89,7 +89,7 @@ export default function PingResultModal() {
           <button
             type="button"
             onClick={closePingResultDialog}
-            className="px-4 py-2 bg-[#ffd600] hover:bg-[#eed000] text-black font-semibold text-xs rounded-lg transition-all cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2.5 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center justify-center"
           >
             Done
           </button>

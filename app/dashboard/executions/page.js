@@ -130,8 +130,26 @@ export default function ExecutionsPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Mobile Filter Dropdown (Full width left to right) */}
+        <div className="sm:hidden w-full">
+          <label className="text-[11px] text-zinc-400 font-mono mb-1 block">Filter Runs</label>
+          <select
+            value={filter}
+            onChange={(e) => {
+              setFilter(e.target.value);
+              setVisibleCount(12);
+            }}
+            className="w-full bg-[#1b2013] border border-[#2b341f] text-white text-xs rounded-lg px-3 py-2.5 font-medium focus:outline-none focus:border-[#ffd600] cursor-pointer"
+          >
+            <option value="all">All Runs ({logs.length})</option>
+            <option value="success">Success ({successCount})</option>
+            <option value="errors">Errors ({errorCount})</option>
+          </select>
+        </div>
+
+        {/* Desktop Filter Buttons */}
+        <div className="hidden sm:flex items-center gap-2">
           <button
             type="button"
             onClick={() => {
@@ -176,14 +194,14 @@ export default function ExecutionsPage() {
           </button>
         </div>
 
-        <div className="relative">
+        <div className="relative w-full sm:w-64">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by monitor or endpoint..."
-            className="pl-9 pr-4 py-1.5 bg-[#1b2013] border border-[#2b341f] rounded-lg text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#ffd600] w-64"
+            className="pl-9 pr-4 py-2 sm:py-1.5 bg-[#1b2013] border border-[#2b341f] rounded-lg text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#ffd600] w-full"
           />
         </div>
       </div>

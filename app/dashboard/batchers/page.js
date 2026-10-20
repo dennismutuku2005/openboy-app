@@ -396,11 +396,11 @@ export default function BatchersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setNewBatchModal(true)}
-            className="py-2.5 sm:py-3 px-4 sm:px-5 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs rounded-lg transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-[0.99]"
+            className="w-full sm:w-auto py-2.5 sm:py-3 px-4 sm:px-5 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs rounded-lg transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>Register Batcher</span>
@@ -451,7 +451,21 @@ export default function BatchersPage() {
 
       {/* Filter Tabs & Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#242b18] pb-3">
-        <div className="flex items-center gap-2">
+        {/* Mobile Filter Dropdown (Full width left to right) */}
+        <div className="sm:hidden w-full">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="w-full bg-[#181c12] border border-[#28321b] text-white text-xs rounded-lg px-3 py-2.5 font-medium focus:outline-none focus:border-[#ffd600] cursor-pointer"
+          >
+            <option value="all">All Workers ({batchers.length})</option>
+            <option value="active">Active ({batchers.filter((b) => b.status === "active").length})</option>
+            <option value="paused">Paused ({batchers.filter((b) => b.status === "paused").length})</option>
+          </select>
+        </div>
+
+        {/* Desktop Filter Tabs */}
+        <div className="hidden sm:flex items-center gap-2">
           <button
             type="button"
             onClick={() => setFilter("all")}
@@ -487,14 +501,14 @@ export default function BatchersPage() {
           </button>
         </div>
 
-        <div className="relative">
+        <div className="relative w-full sm:w-64">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
             placeholder="Search batchers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 pr-3 py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] w-64"
+            className="pl-8 pr-3 py-2 sm:py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] w-full"
           />
         </div>
       </div>

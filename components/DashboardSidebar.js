@@ -78,9 +78,8 @@ export default function DashboardSidebar() {
       >
         {/* Top Section */}
         <div className="p-5 space-y-6">
-          {/* Centered Logo with mobile close button */}
+          {/* Centered Logo with mobile close button on its own */}
           <div className="pt-2 pb-1 flex items-center justify-between md:justify-center w-full">
-            <div className="md:hidden w-8" />
             <Link
               href="/dashboard"
               onClick={() => setIsMobileSidebarOpen(false)}
@@ -99,7 +98,7 @@ export default function DashboardSidebar() {
             <button
               type="button"
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1f2615] md:hidden cursor-pointer"
+              className="p-1 text-zinc-400 hover:text-white md:hidden cursor-pointer transition-colors"
               aria-label="Close navigation menu"
             >
               <X className="w-5 h-5 text-zinc-400" />
