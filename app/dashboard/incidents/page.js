@@ -16,10 +16,12 @@ import {
   X,
   Play,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
+import { TableSkeletonRows, MetricCardsSkeleton } from "@/components/DashboardSkeletons";
 
-const pastIncidents = [
+const initialIncidents = [
   {
     id: "inc-101",
     title: "Postgres Connection Pool Exhaustion on Legacy Reporting Service",
@@ -29,7 +31,7 @@ const pastIncidents = [
     status: "investigating",
     startedAt: "25 minutes ago",
     duration: "Ongoing (25m)",
-    cause: "Exceeded max_connections limit of 100 during heavy monthly aggregation.",
+    cause: "Exceeded max_connections limit of 100 during monthly aggregation.",
     dispatchedTo: ["PagerDuty (DevOps OnCall)", "Slack #ops-alarms"],
   },
   {
@@ -58,18 +60,164 @@ const pastIncidents = [
     dispatchedTo: ["Slack #ops-alarms"],
     resolvedAt: "12 days ago at 09:40 UTC",
   },
+  {
+    id: "inc-98",
+    title: "Kafka Event Ingest Buffer Saturation",
+    service: "Analytics Event Ingestion Batcher",
+    url: "https://worker.openboy.dev/batch/events",
+    severity: "P2 - High",
+    status: "resolved",
+    startedAt: "15 days ago",
+    duration: "8m 10s",
+    cause: "Disk I/O throttle on primary ClickHouse buffer disk volume.",
+    dispatchedTo: ["PagerDuty (DevOps)"],
+    resolvedAt: "15 days ago at 22:15 UTC",
+  },
+  {
+    id: "inc-97",
+    title: "Redis Cluster Failover Event",
+    service: "Realtime WebSocket Ingestion Node",
+    url: "https://ws-edge.openboy.dev/healthz",
+    severity: "P2 - High",
+    status: "resolved",
+    startedAt: "18 days ago",
+    duration: "2m 30s",
+    cause: "Leader replica crashed due to OOM memory spike; sentinel promoted slave.",
+    dispatchedTo: ["Slack #ops-alarms", "PagerDuty"],
+    resolvedAt: "18 days ago at 03:22 UTC",
+  },
+  {
+    id: "inc-96",
+    title: "Elasticsearch JVM Garbage Collection Pause (>15s)",
+    service: "Elasticsearch Index Rolling Optimizer",
+    url: "https://es.internal/_ilm/status",
+    severity: "P3 - Moderate",
+    status: "resolved",
+    startedAt: "21 days ago",
+    duration: "12m 04s",
+    cause: "Heap fragmentation under bursty indexing load.",
+    dispatchedTo: ["Slack #ops-alarms"],
+    resolvedAt: "21 days ago at 11:05 UTC",
+  },
+  {
+    id: "inc-95",
+    title: "AWS SQS Inflight Dead-Letter Spillover",
+    service: "Customer Webhook DLQ Replayer",
+    url: "https://webhooks.openboy.dev/dlq/replay",
+    severity: "P2 - High",
+    status: "resolved",
+    startedAt: "24 days ago",
+    duration: "6m 50s",
+    cause: "Customer destination HTTP endpoint returned repeated 502 Bad Gateway.",
+    dispatchedTo: ["PagerDuty (Webhooks)"],
+    resolvedAt: "24 days ago at 16:40 UTC",
+  },
+  {
+    id: "inc-94",
+    title: "DNS Query NXDOMAIN Intermittent Spike",
+    service: "Internal DNS Resolver Prober",
+    url: "https://dns.internal/healthcheck",
+    severity: "P1 - Critical",
+    status: "resolved",
+    startedAt: "28 days ago",
+    duration: "3m 44s",
+    cause: "CoreDNS pod restart during rolling node group upgrade.",
+    dispatchedTo: ["PagerDuty (Core Infra)", "Slack #critical"],
+    resolvedAt: "28 days ago at 08:14 UTC",
+  },
+  {
+    id: "inc-93",
+    title: "Vault Token Lease Expiration Lockout",
+    service: "Vault Secrets Auto-Rotation Prober",
+    url: "https://vault.internal/v1/sys/health",
+    severity: "P1 - Critical",
+    status: "resolved",
+    startedAt: "30 days ago",
+    duration: "5m 12s",
+    cause: "AppRole token renewal daemon encountered rate limit.",
+    dispatchedTo: ["PagerDuty (Security)"],
+    resolvedAt: "30 days ago at 19:33 UTC",
+  },
+  {
+    id: "inc-92",
+    title: "Segment Buffer Ingestion Backpressure",
+    service: "Segment Telemetry Buffer Flush",
+    url: "https://analytics.internal/buffer/flush",
+    severity: "P3 - Moderate",
+    status: "resolved",
+    startedAt: "34 days ago",
+    duration: "14m 20s",
+    cause: "Downstream API rate limiting incoming batch bursts.",
+    dispatchedTo: ["Slack #ops-alarms"],
+    resolvedAt: "34 days ago at 13:00 UTC",
+  },
+  {
+    id: "inc-91",
+    title: "Cloudflare Edge SSL Handshake Mismatch",
+    service: "Cloudflare DNS Record Health Verifier",
+    url: "https://dns-check.internal/verify/apex",
+    severity: "P2 - High",
+    status: "resolved",
+    startedAt: "38 days ago",
+    duration: "7m 15s",
+    cause: "Origin CA certificate expiration before auto-renewal completed.",
+    dispatchedTo: ["PagerDuty (DevOps)"],
+    resolvedAt: "38 days ago at 04:50 UTC",
+  },
+  {
+    id: "inc-90",
+    title: "Twilio Outbound SMS Gateway 429 Throttle",
+    service: "Twilio SMS Fallback Gateway",
+    url: "https://sms-gateway.openboy.dev/health",
+    severity: "P3 - Moderate",
+    status: "resolved",
+    startedAt: "42 days ago",
+    duration: "9m 02s",
+    cause: "Exceeded short-code TPS limit during OTP authentication wave.",
+    dispatchedTo: ["Slack #ops-alarms"],
+    resolvedAt: "42 days ago at 17:10 UTC",
+  },
+  {
+    id: "inc-89",
+    title: "Kubernetes Kubelet Node Disk Pressure",
+    service: "Kubernetes Node Health Heartbeat",
+    url: "https://k8s-apiserver.internal/livez",
+    severity: "P2 - High",
+    status: "resolved",
+    startedAt: "45 days ago",
+    duration: "11m 30s",
+    cause: "Docker root directory unpruned images filled ephemeral storage.",
+    dispatchedTo: ["PagerDuty (DevOps)"],
+    resolvedAt: "45 days ago at 02:45 UTC",
+  },
+  {
+    id: "inc-88",
+    title: "PostgreSQL Replica Read-Only Query Timeout",
+    service: "PostgreSQL Replica Lag Monitor",
+    url: "https://db-monitor.internal/pg-replica-status",
+    severity: "P3 - Moderate",
+    status: "resolved",
+    startedAt: "48 days ago",
+    duration: "16m 00s",
+    cause: "Long-running analytics report blocked vacuum process.",
+    dispatchedTo: ["Slack #ops-alarms"],
+    resolvedAt: "48 days ago at 06:12 UTC",
+  },
 ];
 
 export default function IncidentsPage() {
-  const { monitors, logs, triggerPing } = useDashboard();
-  const [incidents, setIncidents] = useState(pastIncidents);
+  const { monitors, logs, triggerPing, isLoadingAuth } = useDashboard();
+  const [incidents, setIncidents] = useState(initialIncidents);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("all");
+
+  // Infinite load: 12 per batch
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Custom modals
   const [resolveModal, setResolveModal] = useState({ isOpen: false, incident: null });
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, incident: null });
-  const [diagnosticsRunning, setDiagnosticsRunning] = useState(false);
 
   const activeFailingMonitors = monitors.filter((m) => m.status === "failing");
 
@@ -77,7 +225,7 @@ export default function IncidentsPage() {
     if (filterSeverity !== "all" && !inc.severity.toLowerCase().includes(filterSeverity)) {
       return false;
     }
-    if (searchQuery) {
+    if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
         inc.title.toLowerCase().includes(q) ||
@@ -87,6 +235,17 @@ export default function IncidentsPage() {
     }
     return true;
   });
+
+  const hasMore = visibleCount < filteredIncidents.length;
+
+  const handleLoadMore = () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount((prev) => prev + 12);
+      setIsLoadingMore(false);
+    }, 400);
+  };
 
   const promptResolve = (incident) => {
     setResolveModal({ isOpen: true, incident });
@@ -122,12 +281,18 @@ export default function IncidentsPage() {
   };
 
   const runDiagnostics = (monitorId) => {
-    setDiagnosticsRunning(true);
     triggerPing(monitorId);
-    setTimeout(() => {
-      setDiagnosticsRunning(false);
-    }, 400);
   };
+
+  if (isLoadingAuth) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-64 bg-[#28321b] rounded animate-pulse"></div>
+        <MetricCardsSkeleton count={4} />
+        <div className="h-64 bg-[#181c12] rounded-xl border border-[#273019] animate-pulse"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -139,7 +304,7 @@ export default function IncidentsPage() {
             <span>Incidents & Downtime Alarms</span>
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Real-time failure escalations, service outages, and post-mortem logs.
+            Normalized production table of downtime alarms, MTTR telemetry, and root-cause post-mortems.
           </p>
         </div>
 
@@ -191,193 +356,219 @@ export default function IncidentsPage() {
         </div>
       </div>
 
-      {/* Active Outage Banner if failing monitors exist */}
+      {/* Active Outage Warning if failing monitors exist */}
       {activeFailingMonitors.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-white">
-              Active Outages Detected in Scheduler
-            </h2>
-          </div>
-
-          {activeFailingMonitors.map((mon) => (
-            <div
-              key={mon.id}
-              className="p-5 rounded-xl bg-rose-950/20 border border-rose-500/40 space-y-3"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400">
-                    <AlertTriangle className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">{mon.name}</h3>
-                    <code className="text-xs text-rose-300 font-mono">{mon.url}</code>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => runDiagnostics(mon.id)}
-                    className="px-3.5 py-1.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCw className="w-3.5 h-3.5" />
-                    <span>Run Live Check</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg bg-black/40 border border-rose-900/40 text-xs font-mono text-zinc-300 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div>
-                  <span className="text-zinc-500">Last Code: </span>
-                  <span className="text-rose-400 font-bold">{mon.lastStatus || 503}</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500">Latency: </span>
-                  <span className="text-rose-400 font-bold">{mon.lastLatency || 2840}ms</span>
-                </div>
-                <div>
-                  <span className="text-zinc-500">Cron Cadence: </span>
-                  <span className="text-zinc-300 font-bold">{mon.interval}</span>
-                </div>
+        <div className="p-4 rounded-xl bg-rose-950/20 border border-rose-500/40 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-rose-400" />
+              <div>
+                <h3 className="text-sm font-bold text-white">Active Outages Detected in Scheduler</h3>
+                <p className="text-xs text-zinc-400">{activeFailingMonitors.length} monitor endpoints are currently failing health checks.</p>
               </div>
             </div>
-          ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {activeFailingMonitors.map((mon) => (
+              <div key={mon.id} className="p-3 bg-black/40 border border-rose-900/40 rounded-lg flex items-center justify-between gap-3 text-xs font-mono">
+                <div>
+                  <div className="text-white font-bold">{mon.name}</div>
+                  <div className="text-rose-400 text-[11px]">{mon.url} (Code: {mon.lastStatus || 503})</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => runDiagnostics(mon.id)}
+                  className="px-3 py-1.5 rounded bg-[#ffd600] text-black font-bold text-xs shrink-0 cursor-pointer"
+                >
+                  Diagnose
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Incident Post-Mortems and Audit Logs */}
-      <div className="space-y-4 pt-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#242b18] pb-3">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-zinc-400" />
-            <h2 className="text-sm font-bold text-white">Incident Timeline & Post-Mortem Records</h2>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-              <input
-                type="text"
-                placeholder="Search incidents..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600]"
-              />
-            </div>
-
-            <select
-              value={filterSeverity}
-              onChange={(e) => setFilterSeverity(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-zinc-300 focus:outline-none focus:border-[#ffd600]"
-            >
-              <option value="all">All Severities</option>
-              <option value="p1">P1 - Critical</option>
-              <option value="p2">P2 - High</option>
-              <option value="p3">P3 - Moderate</option>
-            </select>
-          </div>
+      {/* Filter Row & Search Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#242b18] pb-3">
+        <div className="flex items-center gap-2">
+          <select
+            value={filterSeverity}
+            onChange={(e) => setFilterSeverity(e.target.value)}
+            className="px-3 py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-zinc-300 focus:outline-none focus:border-[#ffd600]"
+          >
+            <option value="all">All Severities</option>
+            <option value="p1">P1 - Critical</option>
+            <option value="p2">P2 - High</option>
+            <option value="p3">P3 - Moderate</option>
+          </select>
         </div>
 
-        <div className="space-y-3">
-          {filteredIncidents.map((incident) => {
-            const isOngoing = incident.status === "investigating";
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <input
+            type="text"
+            placeholder="Search incident records..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 pr-3 py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] w-64"
+          />
+        </div>
+      </div>
 
-            return (
-              <div
-                key={incident.id}
-                className="p-5 rounded-xl bg-[#181c12] border border-[#273019] space-y-3"
-              >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
+      {/* NORMALIZED HIGH-DENSITY INCIDENTS TABLE WITH INFINITE SCROLL */}
+      <div className="rounded-xl border border-[#273019] bg-[#181c12] overflow-hidden shadow-lg">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead className="bg-[#12150c] text-zinc-400 font-mono border-b border-[#242b18]">
+              <tr>
+                <th className="py-3 px-4 font-semibold">Severity</th>
+                <th className="py-3 px-4 font-semibold">Status</th>
+                <th className="py-3 px-4 font-semibold">Incident / Affected Service</th>
+                <th className="py-3 px-4 font-semibold">Root Cause Trace</th>
+                <th className="py-3 px-4 font-semibold">Started</th>
+                <th className="py-3 px-4 font-semibold">Duration</th>
+                <th className="py-3 px-4 font-semibold">Notified</th>
+                <th className="py-3 px-4 text-right font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#202615]">
+              {filteredIncidents.slice(0, visibleCount).map((inc) => {
+                const isOngoing = inc.status === "investigating";
+
+                return (
+                  <tr
+                    key={inc.id}
+                    className="hover:bg-[#1f2516] transition-colors group"
+                  >
+                    {/* Severity Badge */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <span
-                        className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded ${
-                          incident.severity.includes("P1")
-                            ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
-                            : incident.severity.includes("P2")
-                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                            : "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border inline-block ${
+                          inc.severity.includes("P1")
+                            ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                            : inc.severity.includes("P2")
+                            ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                            : "bg-blue-500/20 text-blue-300 border-blue-500/40"
                         }`}
                       >
-                        {incident.severity}
+                        {inc.severity.split(" - ")[0]}
                       </span>
+                    </td>
 
+                    {/* Status Badge (Zero dots, clean rectangular tag) */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <span
-                        className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border inline-block ${
                           isOngoing
-                            ? "bg-rose-500/20 text-rose-300"
-                            : "bg-emerald-500/20 text-emerald-300"
+                            ? "bg-rose-500/20 text-rose-300 border-rose-500/30"
+                            : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
                         }`}
                       >
-                        {isOngoing ? "Investigating" : "Resolved"}
+                        {isOngoing ? "Ongoing" : "Resolved"}
                       </span>
+                    </td>
 
-                      <span className="text-xs font-mono text-zinc-400">
-                        {incident.startedAt}
-                      </span>
-                    </div>
+                    {/* Incident Title & Service */}
+                    <td className="py-3.5 px-4 max-w-sm">
+                      <div className="font-semibold text-white truncate group-hover:text-[#ffd600] transition-colors">
+                        {inc.title}
+                      </div>
+                      <div className="text-[11px] text-zinc-400 font-mono truncate mt-0.5">
+                        {inc.service}
+                      </div>
+                    </td>
 
-                    <h3 className="text-sm font-bold text-white pt-1">
-                      {incident.title}
-                    </h3>
-                  </div>
+                    {/* Root Cause */}
+                    <td className="py-3.5 px-4 max-w-xs text-zinc-300 font-mono text-[11px] truncate">
+                      {inc.cause}
+                    </td>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isOngoing && (
-                      <button
-                        type="button"
-                        onClick={() => promptResolve(incident)}
-                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        <span>Mark Resolved</span>
-                      </button>
-                    )}
+                    {/* Started */}
+                    <td className="py-3.5 px-4 whitespace-nowrap font-mono text-zinc-400">
+                      {inc.startedAt}
+                    </td>
 
-                    <button
-                      type="button"
-                      onClick={() => promptDelete(incident)}
-                      className="p-2 rounded-lg bg-[#212716] hover:bg-rose-950/40 text-zinc-400 hover:text-rose-300 border border-[#2e371f] transition-colors cursor-pointer"
-                      title="Delete Incident Record"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                    {/* Duration */}
+                    <td className="py-3.5 px-4 whitespace-nowrap font-mono text-white font-bold">
+                      {inc.duration}
+                    </td>
 
-                {/* Cause and details */}
-                <div className="p-3.5 rounded-lg bg-[#12150c] border border-[#222816] text-xs space-y-1.5">
-                  <div className="text-zinc-400">
-                    <span className="text-zinc-500 font-semibold">Root Cause: </span>
-                    <span className="text-zinc-200">{incident.cause}</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs font-mono text-zinc-400 flex-wrap pt-1">
-                    <span>Impact Duration: <strong className="text-white">{incident.duration}</strong></span>
-                    <span>Service: <strong className="text-[#ffd600]">{incident.service}</strong></span>
-                    {incident.resolvedAt && (
-                      <span className="text-emerald-400 font-bold">Resolved: {incident.resolvedAt}</span>
-                    )}
-                  </div>
-                </div>
+                    {/* Notified */}
+                    <td className="py-3.5 px-4 whitespace-nowrap font-mono text-zinc-400 text-[10px]">
+                      {inc.dispatchedTo.map((d) => d.split(" ")[0]).join(", ")}
+                    </td>
 
-                {/* Dispatched alert targets */}
-                <div className="flex items-center gap-2 text-xs text-zinc-400 flex-wrap pt-1">
-                  <span className="text-zinc-500">Notified:</span>
-                  {incident.dispatchedTo.map((target, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 rounded bg-[#202615] border border-[#2d361e] text-[11px] text-zinc-300"
-                    >
-                      {target}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+                    {/* Action Buttons with Spinners */}
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {isOngoing && (
+                          <button
+                            type="button"
+                            onClick={() => promptResolve(inc)}
+                            className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
+                          >
+                            <Check className="w-3 h-3 stroke-[3]" />
+                            <span>Resolve</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => promptDelete(inc)}
+                          className="p-1.5 rounded-md bg-[#212716] hover:bg-rose-950/40 text-zinc-400 hover:text-rose-300 border border-[#2e371f] transition-colors cursor-pointer"
+                          title="Delete Incident Record"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {/* Skeletons while loading more */}
+              {isLoadingMore && (
+                <TableSkeletonRows
+                  rows={Math.min(12, Math.max(1, filteredIncidents.length - visibleCount))}
+                />
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Table Footer: Infinite Load Trigger */}
+        <div className="p-4 border-t border-[#242b18] bg-[#14170e] flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-xs text-zinc-400 font-mono">
+            Showing <strong className="text-white">{Math.min(visibleCount, filteredIncidents.length)}</strong> of <strong className="text-white">{filteredIncidents.length}</strong> incidents
+          </span>
+
+          {hasMore ? (
+            <button
+              type="button"
+              disabled={isLoadingMore}
+              onClick={handleLoadMore}
+              className="px-4 py-2 bg-[#1e2414] hover:bg-[#28311a] text-[#ffd600] border border-[#2d371d] font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Loading next 12 incidents...</span>
+                </>
+              ) : (
+                <>
+                  <span>Load next 12 incidents</span>
+                  <span className="text-[10px] text-zinc-500 font-mono">
+                    (+{Math.min(12, filteredIncidents.length - visibleCount)} remaining)
+                  </span>
+                </>
+              )}
+            </button>
+          ) : (
+            <span className="text-xs text-zinc-500 font-mono">
+              All {filteredIncidents.length} incident post-mortems loaded
+            </span>
+          )}
         </div>
       </div>
 

@@ -33,7 +33,15 @@ export function DashboardProvider({ children }) {
 
       const saved = localStorage.getItem("openboy_monitors");
       if (saved) {
-        setMonitors(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (parsed.length < initialMonitors.length) {
+          const existingIds = new Set(parsed.map((p) => p.id));
+          const merged = [...parsed, ...initialMonitors.filter((m) => !existingIds.has(m.id))];
+          setMonitors(merged);
+          localStorage.setItem("openboy_monitors", JSON.stringify(merged));
+        } else {
+          setMonitors(parsed);
+        }
       } else {
         setMonitors(initialMonitors);
         localStorage.setItem("openboy_monitors", JSON.stringify(initialMonitors));

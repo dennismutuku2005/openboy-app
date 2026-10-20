@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { History, CheckCircle2, XCircle, Search, Filter, RotateCw, ExternalLink } from "lucide-react";
+import { History, CheckCircle2, XCircle, Search, Filter, RotateCw, ExternalLink, Loader2 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
-import { MetricCardsSkeleton, TableSkeleton } from "@/components/DashboardSkeletons";
+import { MetricCardsSkeleton, TableSkeleton, TableSkeletonRows } from "@/components/DashboardSkeletons";
 
 export default function ExecutionsPage() {
   const { logs, monitors, triggerPing, isLoadingAuth } = useDashboard();
   const [filter, setFilter] = useState("all"); // "all" | "success" | "errors"
   const [search, setSearch] = useState("");
   const [selectedLog, setSelectedLog] = useState(null);
+
+  // Infinite load: 12 per batch
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   if (isLoadingAuth) {
     return (
@@ -19,7 +23,7 @@ export default function ExecutionsPage() {
           <div className="h-3 w-96 bg-[#1f2615] rounded"></div>
         </div>
         <MetricCardsSkeleton count={4} />
-        <TableSkeleton rows={7} />
+        <TableSkeleton rows={12} />
       </div>
     );
   }
@@ -37,6 +41,17 @@ export default function ExecutionsPage() {
     }
     return true;
   });
+
+  const hasMore = visibleCount < filteredLogs.length;
+
+  const handleLoadMore = () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount((prev) => prev + 12);
+      setIsLoadingMore(false);
+    }, 400);
+  };
 
   const totalRuns = logs.length;
   const successCount = logs.filter((l) => l.ok).length;
@@ -57,7 +72,7 @@ export default function ExecutionsPage() {
             <span>Executions & Run History</span>
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Audit trail of every scheduled ping, HTTP response code, and execution latency.
+            Normalized audit trail of every scheduled ping, HTTP response code, and execution latency.
           </p>
         </div>
       </div>
@@ -67,66 +82,95 @@ export default function ExecutionsPage() {
         <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-4 space-y-1">
           <span className="text-xs text-zinc-400">Total Recorded Runs</span>
           <div className="text-2xl font-bold text-white">{totalRuns}</div>
-          <span className="text-xs text-zinc-400">Live in-memory stream</span>
+          <span className="text-[11px] text-zinc-400">Past 24-hour buffer</span>
         </div>
 
         <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-4 space-y-1">
-          <span className="text-xs text-zinc-400">Success Rate</span>
-          <div className="text-2xl font-bold text-emerald-400">{successRate}%</div>
-          <span className="text-xs text-zinc-400">{successCount} successful pings</span>
+          <span className="text-xs text-zinc-400">Successful Pings</span>
+          <div className="text-2xl font-bold text-emerald-400">{successCount}</div>
+          <span className="text-[11px] text-emerald-400 font-mono">
+            {successRate}% success rate
+          </span>
         </div>
 
         <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-4 space-y-1">
-          <span className="text-xs text-zinc-400">Average Latency</span>
-          <div className="text-2xl font-bold text-[#ffd600]">{avgLatency}ms</div>
-          <span className="text-xs text-zinc-400">Across all intervals</span>
-        </div>
-
-        <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-4 space-y-1">
-          <span className="text-xs text-zinc-400">Failed Runs</span>
+          <span className="text-xs text-zinc-400">Failures / Timeouts</span>
           <div className="text-2xl font-bold text-rose-400">{errorCount}</div>
-          <span className="text-xs text-zinc-400">5xx errors or timeouts</span>
+          <span className="text-[11px] text-rose-400">Requires investigation</span>
+        </div>
+
+        <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-4 space-y-1">
+          <span className="text-xs text-zinc-400">Average Ping Latency</span>
+          <div className="text-2xl font-bold text-[#ffd600] font-mono">
+            {avgLatency}ms
+          </div>
+          <span className="text-[11px] text-zinc-400">Across all endpoints</span>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          {[
-            { id: "all", label: `All (${totalRuns})` },
-            { id: "success", label: `Successful (${successCount})` },
-            { id: "errors", label: `Errors (${errorCount})` },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id)}
-              className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors cursor-pointer ${
-                filter === tab.id
-                  ? "bg-[#ffd600] text-black font-semibold"
-                  : "bg-[#1b2013] text-zinc-400 hover:text-white border border-[#2b341f]"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => {
+              setFilter("all");
+              setVisibleCount(12);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              filter === "all"
+                ? "bg-[#2b351e] text-[#ffd600] font-semibold"
+                : "text-zinc-400 hover:text-white bg-[#1b2013] border border-[#2b341f]"
+            }`}
+          >
+            All Runs ({logs.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFilter("success");
+              setVisibleCount(12);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              filter === "success"
+                ? "bg-emerald-950/40 text-emerald-300 font-semibold border border-emerald-500/30"
+                : "text-zinc-400 hover:text-emerald-300 bg-[#1b2013] border border-[#2b341f]"
+            }`}
+          >
+            Success ({successCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFilter("errors");
+              setVisibleCount(12);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              filter === "errors"
+                ? "bg-rose-950/40 text-rose-300 font-semibold border border-rose-500/30"
+                : "text-zinc-400 hover:text-rose-300 bg-[#1b2013] border border-[#2b341f]"
+            }`}
+          >
+            Errors ({errorCount})
+          </button>
         </div>
 
         <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by URL or status..."
-            className="w-full sm:w-64 pl-8 pr-3 py-1.5 text-xs bg-[#1b2013] text-white border border-[#2b341f] rounded-lg focus:outline-none focus:border-[#ffd600] placeholder:text-zinc-500"
+            placeholder="Search by monitor or endpoint..."
+            className="pl-9 pr-4 py-1.5 bg-[#1b2013] border border-[#2b341f] rounded-lg text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#ffd600] w-64"
           />
-          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2 pointer-events-none" />
         </div>
       </div>
 
-      {/* Executions Table */}
-      <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl overflow-hidden shadow-sm">
+      {/* Normalized Executions Table with Infinite Scroll */}
+      <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left border-collapse text-xs">
             <thead className="bg-[#212717] text-zinc-300 text-xs font-semibold border-b border-[#2b341f]">
               <tr>
                 <th className="py-3 px-4">Status</th>
@@ -145,7 +189,7 @@ export default function ExecutionsPage() {
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => (
+                filteredLogs.slice(0, visibleCount).map((log) => (
                   <tr
                     key={log.id}
                     onClick={() => setSelectedLog(log)}
@@ -159,12 +203,7 @@ export default function ExecutionsPage() {
                             : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
                         }`}
                       >
-                        {log.ok ? (
-                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                        ) : (
-                          <XCircle className="w-3 h-3 text-rose-400" />
-                        )}
-                        <span>{log.status || 500}</span>
+                        <span className="font-bold">{log.status || 500}</span>
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -194,8 +233,49 @@ export default function ExecutionsPage() {
                   </tr>
                 ))
               )}
+
+              {/* Skeletons while loading next 12 logs */}
+              {isLoadingMore && (
+                <TableSkeletonRows
+                  rows={Math.min(12, Math.max(1, filteredLogs.length - visibleCount))}
+                />
+              )}
             </tbody>
           </table>
+        </div>
+
+        {/* Table Footer: Infinite Load Trigger */}
+        <div className="p-4 border-t border-[#242b18] bg-[#14170e] flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-xs text-zinc-400 font-mono">
+            Showing <strong className="text-white">{Math.min(visibleCount, filteredLogs.length)}</strong> of <strong className="text-white">{filteredLogs.length}</strong> recorded runs
+          </span>
+
+          {hasMore ? (
+            <button
+              type="button"
+              disabled={isLoadingMore}
+              onClick={handleLoadMore}
+              className="px-4 py-2 bg-[#1e2414] hover:bg-[#28311a] text-[#ffd600] border border-[#2d371d] font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Loading next 12 runs...</span>
+                </>
+              ) : (
+                <>
+                  <span>Load next 12 executions</span>
+                  <span className="text-[10px] text-zinc-500 font-mono">
+                    (+{Math.min(12, filteredLogs.length - visibleCount)} remaining)
+                  </span>
+                </>
+              )}
+            </button>
+          ) : (
+            <span className="text-xs text-zinc-500 font-mono">
+              All {filteredLogs.length} execution logs loaded
+            </span>
+          )}
         </div>
       </div>
     </div>
