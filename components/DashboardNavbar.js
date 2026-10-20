@@ -8,7 +8,7 @@ import { useDashboard } from "./DashboardContext";
 
 export default function DashboardNavbar() {
   const pathname = usePathname();
-  const { openCreateModal, monitors, setIsMobileSidebarOpen } = useDashboard();
+  const { openCreateModal, monitors, setIsMobileSidebarOpen, currentUser } = useDashboard();
   const [utcTime, setUtcTime] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
@@ -55,6 +55,12 @@ export default function DashboardNavbar() {
         subtitle: "Internal scheduler defaults, alert webhooks, and MCP access tokens",
       };
     }
+    if (pathname === "/dashboard/profile") {
+      return {
+        title: "Profile & Account Security",
+        subtitle: "Operator credentials, session telemetry, and password management",
+      };
+    }
     return {
       title: "Cron Schedules",
       subtitle: "Active high-frequency monitors, batchers, and automated health checks",
@@ -63,6 +69,23 @@ export default function DashboardNavbar() {
 
   const info = getPageInfo();
   const activeCount = monitors.filter((m) => m.status === "active").length;
+  const userInitial = (currentUser?.name || currentUser?.username || "A").slice(0, 1).toUpperCase();
+
+  const getThemeStyles = (themeId) => {
+    switch (themeId) {
+      case "emerald":
+        return { bg: "bg-emerald-950/60", text: "text-emerald-400", border: "border-emerald-500/60" };
+      case "cyan":
+        return { bg: "bg-cyan-950/60", text: "text-cyan-400", border: "border-cyan-500/60" };
+      case "violet":
+        return { bg: "bg-purple-950/60", text: "text-purple-400", border: "border-purple-500/60" };
+      case "rose":
+        return { bg: "bg-rose-950/60", text: "text-rose-400", border: "border-rose-500/60" };
+      default:
+        return { bg: "bg-[#232a17]", text: "text-[#ffd600]", border: "border-[#ffd600]/60" };
+    }
+  };
+  const themeStyles = getThemeStyles(currentUser?.avatarTheme);
 
   const handleOpenCreate = () => {
     setIsCreating(true);
@@ -72,15 +95,31 @@ export default function DashboardNavbar() {
 
   return (
     <header className="w-full bg-[#12150c]/95 backdrop-blur-md border-b border-[#242b18] px-4 sm:px-8 py-3.5 sm:py-5 min-h-[64px] sm:min-h-[82px] flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 sticky top-0 z-20 transition-all">
-      {/* Sidebar toggle button on its own (no surrounding div, no background box) */}
-      <button
-        type="button"
-        onClick={() => setIsMobileSidebarOpen(true)}
-        className="md:hidden text-[#ffd600] hover:text-[#eed000] p-1.5 -ml-1.5 self-start cursor-pointer transition-colors"
-        aria-label="Open mobile navigation menu"
-      >
-        <Menu className="w-6 h-6 stroke-[2.2]" />
-      </button>
+      {/* Mobile Top Row: Standalone sidebar toggle button on left & Profile Avatar on right */}
+      <div className="flex md:hidden items-center justify-between w-full">
+        <button
+          type="button"
+          onClick={() => setIsMobileSidebarOpen(true)}
+          className="text-[#ffd600] hover:text-[#eed000] p-1.5 -ml-1.5 cursor-pointer transition-colors"
+          aria-label="Open mobile navigation menu"
+        >
+          <Menu className="w-6 h-6 stroke-[2.2]" />
+        </button>
+
+        {/* Mobile Profile Avatar */}
+        <Link
+          href="/dashboard/profile"
+          className="flex items-center gap-2 group cursor-pointer"
+          title="Open Profile & Account Security"
+        >
+          <div className="relative">
+            <div className={`w-8 h-8 rounded-full ${themeStyles.bg} border ${themeStyles.border} group-hover:scale-105 flex items-center justify-center font-bold text-xs ${themeStyles.text} transition-all shadow-xs`}>
+              {userInitial}
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-400 border-2 border-[#12150c] rounded-full" />
+          </div>
+        </Link>
+      </div>
 
       {/* Breadcrumbs & section title */}
       <div className="flex flex-col justify-center space-y-0.5 sm:space-y-1 min-w-0">
@@ -102,7 +141,7 @@ export default function DashboardNavbar() {
         </div>
       </div>
 
-      {/* Right: Operational Status, Live UTC Clock & Primary Action Button */}
+      {/* Right: Operational Status, Live UTC Clock, Primary Action Button & Desktop Profile Avatar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
         <div className="flex items-center justify-between sm:justify-start gap-2">
           {/* Cluster Status Badge */}
@@ -142,6 +181,28 @@ export default function DashboardNavbar() {
           )}
           <span>New Cron</span>
         </button>
+
+        {/* Desktop Profile Avatar */}
+        <div className="hidden md:flex items-center pl-1 border-l border-[#242b18]">
+          <Link
+            href="/dashboard/profile"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#181c12] hover:bg-[#202617] border border-[#273019] hover:border-[#ffd600]/40 transition-colors group cursor-pointer"
+            title="Operator Profile & Security"
+          >
+            <div className="relative">
+              <div className={`w-8 h-8 rounded-full ${themeStyles.bg} border ${themeStyles.border} group-hover:scale-105 flex items-center justify-center font-bold text-xs ${themeStyles.text} transition-all`}>
+                {userInitial}
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-400 border-2 border-[#12150c] rounded-full" />
+            </div>
+            <div className="hidden lg:block text-left pr-1">
+              <div className="text-xs font-semibold text-white group-hover:text-[#ffd600] transition-colors truncate max-w-[90px]">
+                {currentUser?.name?.split(" ")[0] || currentUser?.username || "Operator"}
+              </div>
+              <div className="text-[10px] text-zinc-400 font-mono leading-none">Profile</div>
+            </div>
+          </Link>
+        </div>
       </div>
     </header>
   );

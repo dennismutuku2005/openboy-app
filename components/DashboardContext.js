@@ -29,7 +29,25 @@ export function DashboardProvider({ children }) {
         router.push("/login");
         return;
       } else {
-        setCurrentUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        const userWithDefaults = {
+          username: parsed.username || "admin",
+          name: parsed.name || "Dennis Mutuku",
+          email: parsed.email || `${parsed.username || "admin"}@openboy.dev`,
+          role: parsed.role || "Cluster Operator",
+          organization: parsed.organization || "OpenBoy Core Engineering",
+          timezone: parsed.timezone || "UTC+03:00 (Nairobi, East Africa)",
+          avatarUrl: parsed.avatarUrl || "",
+          avatarBg: parsed.avatarBg || "from-amber-500 to-[#ffd600]",
+          apiKey: parsed.apiKey || "ob_live_8f99e3a07c1264b91",
+          phone: parsed.phone || "+254 700 000 000",
+          loginTime: parsed.loginTime || new Date().toLocaleTimeString(),
+          twoFactor: parsed.twoFactor !== undefined ? parsed.twoFactor : true,
+        };
+        setCurrentUser(userWithDefaults);
+        try {
+          localStorage.setItem("openboy_user", JSON.stringify(userWithDefaults));
+        } catch {}
       }
 
       const saved = localStorage.getItem("openboy_monitors");
@@ -238,6 +256,31 @@ export function DashboardProvider({ children }) {
     setModalInitialData(null);
   };
 
+  const updateProfile = (updatedFields) => {
+    setCurrentUser((prev) => {
+      const updated = { ...prev, ...updatedFields };
+      try {
+        localStorage.setItem("openboy_user", JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+    return { success: true, message: "Profile updated successfully." };
+  };
+
+  const updatePassword = (currentPass, newPass) => {
+    if (!newPass || newPass.length < 8) {
+      return { success: false, message: "New password must be at least 8 characters long." };
+    }
+    try {
+      localStorage.setItem("openboy_password_last_changed", new Date().toISOString());
+      return { success: true, message: "Security credentials updated successfully." };
+    } catch (e) {
+      return { success: false, message: e.message || "Failed to update password." };
+    }
+  };
+
   return (
     <DashboardContext.Provider
       value={{
@@ -263,6 +306,8 @@ export function DashboardProvider({ children }) {
         closePingResultDialog,
         togglePause,
         triggerPing,
+        updateProfile,
+        updatePassword,
       }}
     >
       {children}
