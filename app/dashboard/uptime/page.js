@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Activity, ArrowUpRight, CheckCircle2, Clock, Search, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ArrowUpRight, CheckCircle2, Clock, Search } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { MetricCardsSkeleton, TableSkeletonRows } from "@/components/DashboardSkeletons";
 
@@ -9,9 +9,15 @@ export default function UptimePage() {
   const { monitors, isLoadingAuth } = useDashboard();
   const [search, setSearch] = useState("");
 
-  // Infinite load: 12 per batch
+  // Infinite load: 12 per batch (Automatic on scroll)
   const [visibleCount, setVisibleCount] = useState(12);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loadSentinelRef = useRef(null);
+
+  // Reset pagination on search
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [search]);
 
   const filtered = monitors.filter((m) => {
     if (search.trim()) {
@@ -23,14 +29,30 @@ export default function UptimePage() {
 
   const hasMore = visibleCount < filtered.length;
 
-  const handleLoadMore = () => {
-    if (isLoadingMore || !hasMore) return;
-    setIsLoadingMore(true);
-    setTimeout(() => {
-      setVisibleCount((prev) => prev + 12);
-      setIsLoadingMore(false);
-    }, 400);
-  };
+  // Seamless auto infinite scroll on scroll
+  useEffect(() => {
+    if (!hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          setIsLoadingMore(true);
+          setTimeout(() => {
+            setVisibleCount((prev) => prev + 12);
+            setIsLoadingMore(false);
+          }, 350);
+        }
+      },
+      { rootMargin: "350px" }
+    );
+
+    const sentinel = loadSentinelRef.current;
+    if (sentinel) observer.observe(sentinel);
+
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [hasMore, isLoadingMore]);
 
   if (isLoadingAuth) {
     return (
@@ -47,27 +69,26 @@ export default function UptimePage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
+      {/* Header (No icon next to title) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <Activity className="w-6 h-6 text-[#ffd600]" />
-            <span>Uptime & Telemetry Metrics</span>
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            Uptime & Telemetry Metrics
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Normalized availability SLA table with 30-day health distributions and 12-item batch loading.
+            Availability SLA metrics, response latency trends, and 30-day health distributions.
           </p>
         </div>
 
         {/* Global SLA Badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1f2615] border border-[#2e3720] text-xs font-mono">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1f2615] border border-[#2e3720] text-xs font-mono self-start sm:self-auto">
           <span className="text-zinc-400">System Status:</span>
           <span className="text-emerald-400 font-bold">99.98% Operational</span>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI Cards (Phone responsive 2x2 grid) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-4 space-y-1">
           <span className="text-xs text-zinc-400">Total Endpoints</span>
           <div className="text-2xl font-bold text-white">{monitors.length}</div>
@@ -116,7 +137,7 @@ export default function UptimePage() {
       {/* NORMALIZED UPTIME TABLE WITH INFINITE SCROLL */}
       <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[680px] text-left border-collapse text-xs">
             <thead className="bg-[#212717] text-zinc-300 font-mono text-xs border-b border-[#2b341f]">
               <tr>
                 <th className="py-3 px-4">Status</th>
@@ -201,39 +222,8 @@ export default function UptimePage() {
           </table>
         </div>
 
-        {/* Table Footer */}
-        <div className="p-4 border-t border-[#242b18] bg-[#14170e] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-xs text-zinc-400 font-mono">
-            Showing <strong className="text-white">{Math.min(visibleCount, filtered.length)}</strong> of <strong className="text-white">{filtered.length}</strong> endpoints
-          </span>
-
-          {hasMore ? (
-            <button
-              type="button"
-              disabled={isLoadingMore}
-              onClick={handleLoadMore}
-              className="px-4 py-2 bg-[#1e2414] hover:bg-[#28311a] text-[#ffd600] border border-[#2d371d] font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
-            >
-              {isLoadingMore ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Loading next 12 endpoints...</span>
-                </>
-              ) : (
-                <>
-                  <span>Load next 12 endpoints</span>
-                  <span className="text-[10px] text-zinc-500 font-mono">
-                    (+{Math.min(12, filtered.length - visibleCount)} remaining)
-                  </span>
-                </>
-              )}
-            </button>
-          ) : (
-            <span className="text-xs text-zinc-500 font-mono">
-              All {filtered.length} endpoints loaded
-            </span>
-          )}
-        </div>
+        {/* Invisible sentinel for automatic infinite scroll */}
+        {hasMore && <div ref={loadSentinelRef} className="h-4 w-full pointer-events-none" />}
       </div>
     </div>
   );

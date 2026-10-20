@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Server,
   Play,
@@ -231,23 +231,7 @@ export default function BatchersPage() {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Infinite Load: 12 per load
-  const [visibleCount, setVisibleCount] = useState(12);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-  // Custom Modals
-  const [runModal, setRunModal] = useState({ isOpen: false, batcher: null, running: false, result: null });
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, batcher: null });
-  const [newBatchModal, setNewBatchModal] = useState(false);
-  const [newForm, setNewForm] = useState({
-    name: "",
-    jobKey: "",
-    schedule: "Every 10m",
-    cronExpr: "*/10 * * * *",
-    targetQueue: "",
-    description: "",
-  });
-
+  // Filtered batchers list
   const filteredBatchers = batchers.filter((b) => {
     if (filter === "active" && b.status !== "active") return false;
     if (filter === "paused" && b.status !== "paused") return false;
@@ -255,23 +239,49 @@ export default function BatchersPage() {
       const q = searchQuery.toLowerCase();
       return (
         b.name.toLowerCase().includes(q) ||
+        b.jobKey.toLowerCase().includes(q) ||
         b.targetQueue.toLowerCase().includes(q) ||
-        b.jobKey.toLowerCase().includes(q)
+        b.schedule.toLowerCase().includes(q)
       );
     }
     return true;
   });
 
+  // Infinite Load: 12 per load (Automatic on scroll)
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loadSentinelRef = useRef(null);
+
   const hasMore = visibleCount < filteredBatchers.length;
 
-  const handleLoadMore = () => {
-    if (isLoadingMore || !hasMore) return;
-    setIsLoadingMore(true);
-    setTimeout(() => {
-      setVisibleCount((prev) => prev + 12);
-      setIsLoadingMore(false);
-    }, 400);
-  };
+  // Reset pagination on filter or search
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [filter, searchQuery]);
+
+  useEffect(() => {
+    if (!hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          setIsLoadingMore(true);
+          setTimeout(() => {
+            setVisibleCount((prev) => prev + 12);
+            setIsLoadingMore(false);
+          }, 350);
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    const sentinel = loadSentinelRef.current;
+    if (sentinel) observer.observe(sentinel);
+
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [hasMore, isLoadingMore]);
 
   const toggleStatus = (id) => {
     setBatchers((prev) =>
@@ -375,12 +385,11 @@ export default function BatchersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      {/* Page Header (No icon next to title) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#242b18]">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <Server className="w-6 h-6 text-[#ffd600]" />
-            <span>Batch Workers</span>
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            Batch Workers
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
             Normalized production table for 10-minute queue consumers, background sync jobs, and database ETL batchers.
@@ -391,7 +400,7 @@ export default function BatchersPage() {
           <button
             type="button"
             onClick={() => setNewBatchModal(true)}
-            className="py-3 px-5 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs rounded-lg transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-[0.99]"
+            className="py-2.5 sm:py-3 px-4 sm:px-5 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs rounded-lg transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-[0.99]"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>Register Batcher</span>
@@ -399,8 +408,8 @@ export default function BatchersPage() {
         </div>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Metrics Grid (Phone responsive 2x2 grid) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="p-4 rounded-xl bg-[#181c12] border border-[#273019]">
           <div className="text-xs text-zinc-400 mb-1 flex items-center justify-between">
             <span>Total Workers</span>
@@ -493,7 +502,7 @@ export default function BatchersPage() {
       {/* NORMALIZED HIGH-DENSITY BATCHERS TABLE WITH INFINITE SCROLL */}
       <div className="rounded-xl border border-[#273019] bg-[#181c12] overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[700px] text-left border-collapse text-xs">
             <thead className="bg-[#12150c] text-zinc-400 font-mono border-b border-[#242b18]">
               <tr>
                 <th className="py-3 px-4 font-semibold">Status</th>
@@ -617,39 +626,8 @@ export default function BatchersPage() {
           </table>
         </div>
 
-        {/* Table Footer: Infinite Load Trigger */}
-        <div className="p-4 border-t border-[#242b18] bg-[#14170e] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-xs text-zinc-400 font-mono">
-            Showing <strong className="text-white">{Math.min(visibleCount, filteredBatchers.length)}</strong> of <strong className="text-white">{filteredBatchers.length}</strong> workers
-          </span>
-
-          {hasMore ? (
-            <button
-              type="button"
-              disabled={isLoadingMore}
-              onClick={handleLoadMore}
-              className="px-4 py-2 bg-[#1e2414] hover:bg-[#28311a] text-[#ffd600] border border-[#2d371d] font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
-            >
-              {isLoadingMore ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Loading next 12 workers...</span>
-                </>
-              ) : (
-                <>
-                  <span>Load next 12 workers</span>
-                  <span className="text-[10px] text-zinc-500 font-mono">
-                    (+{Math.min(12, filteredBatchers.length - visibleCount)} remaining)
-                  </span>
-                </>
-              )}
-            </button>
-          ) : (
-            <span className="text-xs text-zinc-500 font-mono">
-              All {filteredBatchers.length} batchers loaded
-            </span>
-          )}
-        </div>
+        {/* Invisible sentinel for automatic infinite scroll */}
+        {hasMore && <div ref={loadSentinelRef} className="h-4 w-full pointer-events-none" />}
       </div>
 
       {/* Trigger / Inspect Run Modal */}

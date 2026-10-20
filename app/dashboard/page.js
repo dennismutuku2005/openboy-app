@@ -139,14 +139,30 @@ export default function DashboardMainPage() {
   const errorLogs = logs.filter((l) => !l.ok || (l.status && l.status >= 400));
   const hasMore = visibleCount < filteredMonitors.length;
 
-  const handleLoadMore = () => {
-    if (isLoadingMore || !hasMore) return;
-    setIsLoadingMore(true);
-    setTimeout(() => {
-      setVisibleCount((prev) => prev + 12);
-      setIsLoadingMore(false);
-    }, 400);
-  };
+  // Seamless auto infinite scroll on scroll
+  useEffect(() => {
+    if (!hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          setIsLoadingMore(true);
+          setTimeout(() => {
+            setVisibleCount((prev) => prev + 12);
+            setIsLoadingMore(false);
+          }, 350);
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    const sentinel = loadSentinelRef.current;
+    if (sentinel) observer.observe(sentinel);
+
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [hasMore, isLoadingMore]);
 
   if (isLoadingAuth) {
     return <DashboardPageSkeleton />;
@@ -157,21 +173,11 @@ export default function DashboardMainPage() {
       {/* Top Header & Sub-Tabs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#252c1a]">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-white tracking-tight">
-              Schedules
-            </h1>
-            <button
-              type="button"
-              onClick={() => openCreateModal()}
-              title="Add new schedule"
-              className="text-zinc-400 hover:text-white p-1 rounded hover:bg-[#202616] transition-colors cursor-pointer"
-            >
-              <Plus className="w-5 h-5 text-[#ffd600]" />
-            </button>
-          </div>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Normalized production table with infinite pagination of 12 per load.
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            Schedules
+          </h1>
+          <p className="text-xs text-zinc-400 mt-1">
+            High-frequency cron schedules, real-time dispatchers, and health monitors.
           </p>
         </div>
 
@@ -275,7 +281,7 @@ export default function DashboardMainPage() {
                 placeholder="Search by name or URL..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] w-56 sm:w-64"
+                className="pl-8 pr-3 py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] w-full sm:w-64"
               />
             </div>
             <div className="text-xs text-zinc-400 font-mono whitespace-nowrap">
@@ -310,7 +316,7 @@ export default function DashboardMainPage() {
           ) : (
             <div className="rounded-xl border border-[#273019] bg-[#181c12] overflow-hidden shadow-lg">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
+                <table className="w-full min-w-[700px] text-left border-collapse text-xs">
                   <thead className="bg-[#12150c] text-zinc-400 font-mono border-b border-[#242b18]">
                     <tr>
                       <th className="py-3 px-4 font-semibold">Status</th>
@@ -481,39 +487,8 @@ export default function DashboardMainPage() {
                 </table>
               </div>
 
-              {/* Table Footer: Infinite Load Trigger & Count Status */}
-              <div className="p-4 border-t border-[#242b18] bg-[#14170e] flex flex-col sm:flex-row items-center justify-between gap-3">
-                <span className="text-xs text-zinc-400 font-mono">
-                  Showing <strong className="text-white">{Math.min(visibleCount, filteredMonitors.length)}</strong> of <strong className="text-white">{filteredMonitors.length}</strong> monitors
-                </span>
-
-                {hasMore ? (
-                  <button
-                    type="button"
-                    disabled={isLoadingMore}
-                    onClick={handleLoadMore}
-                    className="px-4 py-2 bg-[#1e2414] hover:bg-[#28311a] text-[#ffd600] border border-[#2d371d] font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {isLoadingMore ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Loading next 12 monitors...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Load next 12 monitors</span>
-                        <span className="text-[10px] text-zinc-500 font-mono">
-                          (+{Math.min(12, filteredMonitors.length - visibleCount)} remaining)
-                        </span>
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <span className="text-xs text-zinc-500 font-mono">
-                    All {filteredMonitors.length} monitors loaded
-                  </span>
-                )}
-              </div>
+              {/* Invisible sentinel for automatic infinite scroll */}
+              {hasMore && <div ref={loadSentinelRef} className="h-4 w-full pointer-events-none" />}
             </div>
           )}
 

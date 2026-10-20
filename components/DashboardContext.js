@@ -19,6 +19,7 @@ export function DashboardProvider({ children }) {
   // Custom modal dialogs (no browser alert/confirm!)
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, monitor: null });
   const [pingResultDialog, setPingResultDialog] = useState({ isOpen: false, result: null });
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Auth check & load data
   useEffect(() => {
@@ -249,6 +250,8 @@ export function DashboardProvider({ children }) {
         isLoadingAuth,
         deleteDialog,
         pingResultDialog,
+        isMobileSidebarOpen,
+        setIsMobileSidebarOpen,
         logout,
         setActiveFilter,
         openCreateModal,

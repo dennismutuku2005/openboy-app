@@ -16,12 +16,23 @@ import {
   ShieldAlert,
   Server,
   Loader2,
+  X,
 } from "lucide-react";
 import { useDashboard } from "./DashboardContext";
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
-  const { monitors, logs, openCreateModal, logout, currentUser, setActiveFilter, activeFilter } = useDashboard();
+  const {
+    monitors,
+    logs,
+    openCreateModal,
+    logout,
+    currentUser,
+    setActiveFilter,
+    activeFilter,
+    isMobileSidebarOpen,
+    setIsMobileSidebarOpen,
+  } = useDashboard();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Professional cron system core pages
@@ -50,34 +61,65 @@ export default function DashboardSidebar() {
   };
 
   return (
-    <aside className="w-64 sm:w-72 bg-[#12150c] border-r border-[#242b18] flex flex-col justify-between shrink-0 h-screen sticky top-0 overflow-y-auto z-30 select-none">
-      {/* Top Section */}
-      <div className="p-5 space-y-6">
-        {/* Centered Logo alone with no background, no border, and no text */}
-        <div className="pt-2 pb-1 flex items-center justify-center w-full">
-          <Link href="/dashboard" className="flex items-center justify-center transition-transform hover:scale-105" title="OpenBoy Internal Console">
-            <Image
-              src="/logos/logo.png"
-              alt="OpenBoy Logo"
-              width={56}
-              height={56}
-              priority
-              className="object-contain"
-            />
-          </Link>
-        </div>
+    <>
+      {/* Mobile Drawer Backdrop */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-xs z-40 md:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
-        {/* Primary Action Button: Exact size and style of the Login Button */}
-        <div>
-          <button
-            type="button"
-            onClick={() => openCreateModal()}
-            className="w-full py-3.5 px-6 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Create monitor</span>
-          </button>
-        </div>
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#12150c] border-r border-[#242b18] flex flex-col justify-between h-screen overflow-y-auto select-none transition-transform duration-300 ease-in-out md:static md:translate-x-0 md:z-30 md:shrink-0 md:sticky md:top-0 md:w-64 sm:md:w-72 ${
+          isMobileSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
+        {/* Top Section */}
+        <div className="p-5 space-y-6">
+          {/* Centered Logo with mobile close button */}
+          <div className="pt-2 pb-1 flex items-center justify-between md:justify-center w-full">
+            <div className="md:hidden w-8" />
+            <Link
+              href="/dashboard"
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="flex items-center justify-center transition-transform hover:scale-105"
+              title="OpenBoy Internal Console"
+            >
+              <Image
+                src="/logos/logo.png"
+                alt="OpenBoy Logo"
+                width={56}
+                height={56}
+                priority
+                className="object-contain"
+              />
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1f2615] md:hidden cursor-pointer"
+              aria-label="Close navigation menu"
+            >
+              <X className="w-5 h-5 text-zinc-400" />
+            </button>
+          </div>
+
+          {/* Primary Action Button: Exact size and style of the Login Button */}
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                openCreateModal();
+                setIsMobileSidebarOpen(false);
+              }}
+              className="w-full py-3.5 px-6 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>Create monitor</span>
+            </button>
+          </div>
 
         {/* Core Navigation for a Professional Cron System */}
         <div className="space-y-1">
@@ -95,6 +137,7 @@ export default function DashboardSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setIsMobileSidebarOpen(false)}
                 className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-medium transition-colors ${
                   isActive
                     ? "bg-[#212716] text-[#ffd600] font-semibold border-l-2 border-[#ffd600]"
@@ -203,5 +246,6 @@ export default function DashboardSidebar() {
         </button>
       </div>
     </aside>
+  </>
   );
 }

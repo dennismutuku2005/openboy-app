@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ShieldAlert,
   AlertTriangle,
@@ -211,41 +211,59 @@ export default function IncidentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("all");
 
-  // Infinite load: 12 per batch
-  const [visibleCount, setVisibleCount] = useState(12);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-  // Custom modals
-  const [resolveModal, setResolveModal] = useState({ isOpen: false, incident: null });
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, incident: null });
-
-  const activeFailingMonitors = monitors.filter((m) => m.status === "failing");
-
   const filteredIncidents = incidents.filter((inc) => {
-    if (filterSeverity !== "all" && !inc.severity.toLowerCase().includes(filterSeverity)) {
-      return false;
-    }
+    if (filterSeverity === "p1" && !inc.severity.includes("P1")) return false;
+    if (filterSeverity === "p2" && !inc.severity.includes("P2")) return false;
+    if (filterSeverity === "p3" && !inc.severity.includes("P3")) return false;
+    if (filterSeverity === "ongoing" && inc.status !== "investigating") return false;
+    if (filterSeverity === "resolved" && inc.status !== "resolved") return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
         inc.title.toLowerCase().includes(q) ||
         inc.service.toLowerCase().includes(q) ||
-        inc.cause.toLowerCase().includes(q)
+        inc.cause.toLowerCase().includes(q) ||
+        inc.severity.toLowerCase().includes(q)
       );
     }
     return true;
   });
 
+  // Infinite load: 12 per batch (Automatic on scroll)
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loadSentinelRef = useRef(null);
+
   const hasMore = visibleCount < filteredIncidents.length;
 
-  const handleLoadMore = () => {
-    if (isLoadingMore || !hasMore) return;
-    setIsLoadingMore(true);
-    setTimeout(() => {
-      setVisibleCount((prev) => prev + 12);
-      setIsLoadingMore(false);
-    }, 400);
-  };
+  // Reset pagination on filter or search
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [filterSeverity, searchQuery]);
+
+  useEffect(() => {
+    if (!hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          setIsLoadingMore(true);
+          setTimeout(() => {
+            setVisibleCount((prev) => prev + 12);
+            setIsLoadingMore(false);
+          }, 350);
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    const sentinel = loadSentinelRef.current;
+    if (sentinel) observer.observe(sentinel);
+
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [hasMore, isLoadingMore]);
 
   const promptResolve = (incident) => {
     setResolveModal({ isOpen: true, incident });
@@ -296,12 +314,11 @@ export default function IncidentsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header (No icon next to title) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#242b18]">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <ShieldAlert className="w-6 h-6 text-rose-400" />
-            <span>Incidents & Downtime Alarms</span>
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            Incidents & Downtime Alarms
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
             Normalized production table of downtime alarms, MTTR telemetry, and root-cause post-mortems.
@@ -315,8 +332,8 @@ export default function IncidentsPage() {
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Metrics Row (Phone responsive 2x2 grid) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="p-4 rounded-xl bg-[#181c12] border border-[#273019]">
           <div className="text-xs text-zinc-400 mb-1 flex items-center justify-between">
             <span>Active Incidents</span>
@@ -419,7 +436,7 @@ export default function IncidentsPage() {
       {/* NORMALIZED HIGH-DENSITY INCIDENTS TABLE WITH INFINITE SCROLL */}
       <div className="rounded-xl border border-[#273019] bg-[#181c12] overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[700px] text-left border-collapse text-xs">
             <thead className="bg-[#12150c] text-zinc-400 font-mono border-b border-[#242b18]">
               <tr>
                 <th className="py-3 px-4 font-semibold">Severity</th>
@@ -537,39 +554,8 @@ export default function IncidentsPage() {
           </table>
         </div>
 
-        {/* Table Footer: Infinite Load Trigger */}
-        <div className="p-4 border-t border-[#242b18] bg-[#14170e] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-xs text-zinc-400 font-mono">
-            Showing <strong className="text-white">{Math.min(visibleCount, filteredIncidents.length)}</strong> of <strong className="text-white">{filteredIncidents.length}</strong> incidents
-          </span>
-
-          {hasMore ? (
-            <button
-              type="button"
-              disabled={isLoadingMore}
-              onClick={handleLoadMore}
-              className="px-4 py-2 bg-[#1e2414] hover:bg-[#28311a] text-[#ffd600] border border-[#2d371d] font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
-            >
-              {isLoadingMore ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Loading next 12 incidents...</span>
-                </>
-              ) : (
-                <>
-                  <span>Load next 12 incidents</span>
-                  <span className="text-[10px] text-zinc-500 font-mono">
-                    (+{Math.min(12, filteredIncidents.length - visibleCount)} remaining)
-                  </span>
-                </>
-              )}
-            </button>
-          ) : (
-            <span className="text-xs text-zinc-500 font-mono">
-              All {filteredIncidents.length} incident post-mortems loaded
-            </span>
-          )}
-        </div>
+        {/* Invisible sentinel for automatic infinite scroll */}
+        {hasMore && <div ref={loadSentinelRef} className="h-4 w-full pointer-events-none" />}
       </div>
 
       {/* Mark Resolved Modal */}
