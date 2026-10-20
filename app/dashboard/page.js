@@ -248,10 +248,7 @@ export default function DashboardMainPage() {
                 : "text-zinc-400 hover:text-rose-300"
             }`}
           >
-            <span className="flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3 text-rose-400" />
-              <span>Errors</span>
-            </span>
+            <span>Errors</span>
             {errorLogs.length > 0 && (
               <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono font-bold">
                 {errorLogs.length}
@@ -648,9 +645,8 @@ export default function DashboardMainPage() {
           ) : (
             <div className="rounded-xl border border-rose-500/30 bg-[#181c12] overflow-hidden">
               <div className="p-4 border-b border-rose-500/30 bg-rose-950/20 flex items-center justify-between">
-                <span className="text-sm font-bold text-rose-300 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-400" />
-                  <span>Recorded Outages & Failure Traces</span>
+                <span className="text-sm font-bold text-rose-300">
+                  Recorded Outages & Failure Traces
                 </span>
                 <span className="text-xs font-mono text-rose-300 font-bold">{errorLogs.length} failures</span>
               </div>
