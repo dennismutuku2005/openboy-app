@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus, Clock, Activity, Loader2, Sparkles, Terminal, Menu } from "lucide-react";
+import { Plus, Clock, Loader2, Menu } from "lucide-react";
 import { useDashboard } from "./DashboardContext";
 
 export default function DashboardNavbar() {
@@ -24,52 +24,9 @@ export default function DashboardNavbar() {
     return () => clearInterval(interval);
   }, []);
 
-  const getPageInfo = () => {
-    if (pathname === "/dashboard/executions") {
-      return {
-        title: "Executions & History",
-        subtitle: "Audit trail, live cron dispatch timeline, and payload inspection",
-      };
-    }
-    if (pathname === "/dashboard/uptime") {
-      return {
-        title: "Uptime SLA & Telemetry",
-        subtitle: "Global availability metrics, latency distributions, and health bars",
-      };
-    }
-    if (pathname === "/dashboard/batchers") {
-      return {
-        title: "Batch Workers",
-        subtitle: "10-minute queue consumers, background sync workers, and heavy batchers",
-      };
-    }
-    if (pathname === "/dashboard/incidents") {
-      return {
-        title: "Incidents & Downtime Alarms",
-        subtitle: "Real-time failure escalations, service outages, and post-mortem logs",
-      };
-    }
-    if (pathname === "/dashboard/settings") {
-      return {
-        title: "Settings & Integrations",
-        subtitle: "Internal scheduler defaults, alert webhooks, and MCP access tokens",
-      };
-    }
-    if (pathname === "/dashboard/profile") {
-      return {
-        title: "Profile & Account Security",
-        subtitle: "Operator credentials, session telemetry, and password management",
-      };
-    }
-    return {
-      title: "Cron Schedules",
-      subtitle: "Active high-frequency monitors, batchers, and automated health checks",
-    };
-  };
-
-  const info = getPageInfo();
   const activeCount = monitors.filter((m) => m.status === "active").length;
   const userInitial = (currentUser?.name || currentUser?.username || "A").slice(0, 1).toUpperCase();
+  const currentSection = pathname.replace("/dashboard", "").replace("/", "") || "schedules";
 
   const handleOpenCreate = () => {
     setIsCreating(true);
@@ -78,8 +35,8 @@ export default function DashboardNavbar() {
   };
 
   return (
-    <header className="w-full bg-[#12150c]/95 backdrop-blur-md border-b border-[#242b18] px-4 sm:px-8 py-3.5 sm:py-5 min-h-[64px] sm:min-h-[82px] flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 sticky top-0 z-20 transition-all">
-      {/* Mobile Top Row: Standalone sidebar toggle button on left & Profile Avatar on right */}
+    <header className="w-full bg-[#12150c]/95 backdrop-blur-md border-b border-[#242b18] px-4 sm:px-8 py-3 sm:py-3.5 min-h-[56px] sm:min-h-[64px] flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-0 z-20 transition-all">
+      {/* Mobile Top Row: Standalone sidebar toggle, Breadcrumb & Profile Avatar */}
       <div className="flex md:hidden items-center justify-between w-full">
         <button
           type="button"
@@ -89,6 +46,15 @@ export default function DashboardNavbar() {
         >
           <Menu className="w-6 h-6 stroke-[2.2]" />
         </button>
+
+        {/* Mobile Breadcrumb */}
+        <div className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-400">
+          <span className="text-zinc-500">openboy</span>
+          <span className="text-zinc-600">/</span>
+          <span className="text-zinc-200 font-semibold px-2 py-0.5 rounded bg-[#181d11] border border-[#273019] capitalize">
+            {currentSection}
+          </span>
+        </div>
 
         {/* Mobile Profile Avatar */}
         <Link
@@ -105,24 +71,15 @@ export default function DashboardNavbar() {
         </Link>
       </div>
 
-      {/* Breadcrumbs & section title */}
-      <div className="flex flex-col justify-center space-y-0.5 sm:space-y-1 min-w-0">
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-mono text-zinc-400 truncate">
-          <span className="text-zinc-500">openboy</span>
-          <span className="text-zinc-600">/</span>
-          <span className="text-[#ffd600] font-medium">console</span>
-          <span className="text-zinc-600">/</span>
-          <span className="text-zinc-300 truncate">{pathname.replace("/dashboard", "").replace("/", "") || "schedules"}</span>
-        </div>
-
-        <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
-          <h1 className="text-lg sm:text-xl md:text-[22px] font-bold text-white tracking-tight">
-            {info.title}
-          </h1>
-          <span className="text-xs text-zinc-400 hidden lg:inline-block">
-            {info.subtitle}
-          </span>
-        </div>
+      {/* Desktop Breadcrumbs (No duplicate page title) */}
+      <div className="hidden md:flex items-center gap-2 text-xs font-mono text-zinc-400">
+        <span className="text-zinc-500">openboy</span>
+        <span className="text-zinc-600">/</span>
+        <span className="text-[#ffd600] font-medium">console</span>
+        <span className="text-zinc-600">/</span>
+        <span className="text-zinc-200 font-semibold px-2.5 py-1 rounded-md bg-[#181d11] border border-[#273019] text-[11px] tracking-wide capitalize">
+          {currentSection}
+        </span>
       </div>
 
       {/* Right: Operational Status, Live UTC Clock, Primary Action Button & Desktop Profile Avatar */}
