@@ -27,14 +27,6 @@ import {
 import { useDashboard } from "@/components/DashboardContext";
 import { MetricCardsSkeleton } from "@/components/DashboardSkeletons";
 
-const AVATAR_PRESETS = [
-  { id: "amber", label: "Solar Gold", bg: "bg-[#232a17]", text: "text-[#ffd600]", border: "border-[#ffd600]/60", ring: "ring-[#ffd600]" },
-  { id: "emerald", label: "Emerald Edge", bg: "bg-emerald-950/40", text: "text-emerald-400", border: "border-emerald-500/60", ring: "ring-emerald-500" },
-  { id: "cyan", label: "Cyan Probe", bg: "bg-cyan-950/40", text: "text-cyan-400", border: "border-cyan-500/60", ring: "ring-cyan-500" },
-  { id: "violet", label: "Neon Violet", bg: "bg-purple-950/40", text: "text-purple-400", border: "border-purple-500/60", ring: "ring-purple-500" },
-  { id: "rose", label: "Crimson Sentinel", bg: "bg-rose-950/40", text: "text-rose-400", border: "border-rose-500/60", ring: "ring-rose-500" },
-];
-
 export default function ProfilePage() {
   const { currentUser, updateProfile, updatePassword, isLoadingAuth } = useDashboard();
 
@@ -46,7 +38,6 @@ export default function ProfilePage() {
   const [organization, setOrganization] = useState("");
   const [timezone, setTimezone] = useState("UTC+03:00 (Nairobi, East Africa)");
   const [phone, setPhone] = useState("");
-  const [avatarTheme, setAvatarTheme] = useState("amber");
 
   // Profile save toast state
   const [profileSaved, setProfileSaved] = useState(false);
@@ -78,7 +69,6 @@ export default function ProfilePage() {
       setOrganization(currentUser.organization || "OpenBoy Core Engineering");
       setTimezone(currentUser.timezone || "UTC+03:00 (Nairobi, East Africa)");
       setPhone(currentUser.phone || "+254 700 000 000");
-      setAvatarTheme(currentUser.avatarTheme || "amber");
       if (currentUser.apiKey) setApiToken(currentUser.apiKey);
     }
   }, [currentUser]);
@@ -111,7 +101,6 @@ export default function ProfilePage() {
         organization,
         timezone,
         phone,
-        avatarTheme,
       });
       setIsSavingProfile(false);
       setProfileSaved(true);
@@ -178,7 +167,6 @@ export default function ProfilePage() {
     }, 400);
   };
 
-  const currentThemeObj = AVATAR_PRESETS.find((p) => p.id === avatarTheme) || AVATAR_PRESETS[0];
   const userInitial = (name || username || "A").slice(0, 1).toUpperCase();
 
   if (isLoadingAuth) {
@@ -215,18 +203,16 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Profile Overview Card with Avatar Preview */}
-      <div className="p-5 sm:p-6 rounded-xl bg-[#181c12] border border-[#273019] shadow-lg space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 pb-6 border-b border-[#242b18]">
+      {/* Profile Overview Card with Circular Avatar */}
+      <div className="p-5 sm:p-6 rounded-xl bg-[#181c12] border border-[#273019] shadow-lg">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
           <div className="flex items-center gap-4">
-            {/* Live Interactive Avatar */}
+            {/* Live Interactive Circular Avatar */}
             <div className="relative">
-              <div
-                className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${currentThemeObj.bg} border-2 ${currentThemeObj.border} flex items-center justify-center font-bold text-2xl sm:text-3xl ${currentThemeObj.text} shadow-xl transition-all`}
-              >
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#232a17] border-2 border-[#ffd600]/60 flex items-center justify-center font-bold text-2xl sm:text-3xl text-[#ffd600] shadow-xl">
                 {userInitial}
               </div>
-              <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 border-2 border-[#181c12] rounded-full" />
+              <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-emerald-400 border-2 border-[#181c12] rounded-full" />
             </div>
 
             <div className="space-y-1">
@@ -257,36 +243,6 @@ export default function ProfilePage() {
               <span className="text-zinc-500">2FA Status:</span>
               <span className="text-emerald-400 font-bold">Hardware & App Enabled</span>
             </div>
-          </div>
-        </div>
-
-        {/* Avatar Theme Picker */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-zinc-300 block">
-            Avatar Theme & Topbar Presence
-          </label>
-          <p className="text-[11px] text-zinc-500">
-            Customize the color theme displayed for your avatar on the topbar and mobile navigation.
-          </p>
-          <div className="flex items-center gap-2.5 flex-wrap pt-1">
-            {AVATAR_PRESETS.map((preset) => {
-              const isSelected = avatarTheme === preset.id;
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => setAvatarTheme(preset.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
-                    isSelected
-                      ? `${preset.bg} ${preset.border} ${preset.text} ring-1 ${preset.ring} font-bold shadow-md`
-                      : "bg-[#14170e] border-[#273019] text-zinc-400 hover:text-white hover:border-[#384524]"
-                  }`}
-                >
-                  <span className={`w-3.5 h-3.5 rounded-full ${preset.bg} border ${preset.border} inline-block`} />
-                  <span>{preset.label}</span>
-                </button>
-              );
-            })}
           </div>
         </div>
       </div>

@@ -220,48 +220,22 @@ export default function DashboardSidebar() {
 
       {/* Bottom Section: Operator Profile & Clean Text-Only Logout Button */}
       <div className="p-4 border-t border-[#222816] bg-[#10120a] space-y-3">
-        {(() => {
-          const themeId = currentUser?.avatarTheme;
-          let bg = "bg-[#232a17]";
-          let text = "text-[#ffd600]";
-          let border = "border-[#343e22] group-hover:border-[#ffd600]";
-          if (themeId === "emerald") {
-            bg = "bg-emerald-950/60";
-            text = "text-emerald-400";
-            border = "border-emerald-500/50 group-hover:border-emerald-400";
-          } else if (themeId === "cyan") {
-            bg = "bg-cyan-950/60";
-            text = "text-cyan-400";
-            border = "border-cyan-500/50 group-hover:border-cyan-400";
-          } else if (themeId === "violet") {
-            bg = "bg-purple-950/60";
-            text = "text-purple-400";
-            border = "border-purple-500/50 group-hover:border-purple-400";
-          } else if (themeId === "rose") {
-            bg = "bg-rose-950/60";
-            text = "text-rose-400";
-            border = "border-rose-500/50 group-hover:border-rose-400";
-          }
-
-          return (
-            <Link
-              href="/dashboard/profile"
-              onClick={() => setIsMobileSidebarOpen(false)}
-              className="flex items-center gap-3 p-1.5 -m-1.5 rounded-lg hover:bg-[#191d11] transition-colors cursor-pointer group"
-              title="Manage Operator Profile & Security"
-            >
-              <div className={`w-9 h-9 rounded-full ${bg} border ${border} flex items-center justify-center font-bold text-sm ${text} transition-colors`}>
-                {(currentUser?.name || currentUser?.username || "A").slice(0, 1).toUpperCase()}
-              </div>
-              <div className="overflow-hidden flex-1">
-                <div className="text-xs font-semibold text-white truncate group-hover:text-[#ffd600] transition-colors">
-                  {currentUser?.name || currentUser?.username || "admin"}
-                </div>
-                <div className="text-xs text-zinc-400">Operator Profile</div>
-              </div>
-            </Link>
-          );
-        })()}
+        <Link
+          href="/dashboard/profile"
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="flex items-center gap-3 p-1.5 -m-1.5 rounded-lg hover:bg-[#191d11] transition-colors cursor-pointer group"
+          title="Manage Operator Profile & Security"
+        >
+          <div className="w-9 h-9 rounded-full bg-[#232a17] border border-[#343e22] group-hover:border-[#ffd600] flex items-center justify-center font-bold text-sm text-[#ffd600] transition-colors">
+            {(currentUser?.name || currentUser?.username || "A").slice(0, 1).toUpperCase()}
+          </div>
+          <div className="overflow-hidden flex-1">
+            <div className="text-xs font-semibold text-white truncate group-hover:text-[#ffd600] transition-colors">
+              {currentUser?.name || currentUser?.username || "admin"}
+            </div>
+            <div className="text-xs text-zinc-400">Operator Profile</div>
+          </div>
+        </Link>
 
         {/* Dedicated Logout Button: Clean text-only without icon, with spinner when clicked */}
         <button

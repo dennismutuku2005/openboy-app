@@ -71,22 +71,6 @@ export default function DashboardNavbar() {
   const activeCount = monitors.filter((m) => m.status === "active").length;
   const userInitial = (currentUser?.name || currentUser?.username || "A").slice(0, 1).toUpperCase();
 
-  const getThemeStyles = (themeId) => {
-    switch (themeId) {
-      case "emerald":
-        return { bg: "bg-emerald-950/60", text: "text-emerald-400", border: "border-emerald-500/60" };
-      case "cyan":
-        return { bg: "bg-cyan-950/60", text: "text-cyan-400", border: "border-cyan-500/60" };
-      case "violet":
-        return { bg: "bg-purple-950/60", text: "text-purple-400", border: "border-purple-500/60" };
-      case "rose":
-        return { bg: "bg-rose-950/60", text: "text-rose-400", border: "border-rose-500/60" };
-      default:
-        return { bg: "bg-[#232a17]", text: "text-[#ffd600]", border: "border-[#ffd600]/60" };
-    }
-  };
-  const themeStyles = getThemeStyles(currentUser?.avatarTheme);
-
   const handleOpenCreate = () => {
     setIsCreating(true);
     openCreateModal();
@@ -109,11 +93,11 @@ export default function DashboardNavbar() {
         {/* Mobile Profile Avatar */}
         <Link
           href="/dashboard/profile"
-          className="flex items-center gap-2 group cursor-pointer"
+          className="p-1 rounded-full hover:ring-2 hover:ring-[#ffd600]/40 transition-all cursor-pointer group"
           title="Open Profile & Account Security"
         >
           <div className="relative">
-            <div className={`w-8 h-8 rounded-full ${themeStyles.bg} border ${themeStyles.border} group-hover:scale-105 flex items-center justify-center font-bold text-xs ${themeStyles.text} transition-all shadow-xs`}>
+            <div className="w-8 h-8 rounded-full bg-[#232a17] border border-[#ffd600]/40 group-hover:border-[#ffd600] group-hover:scale-105 flex items-center justify-center font-bold text-xs text-[#ffd600] transition-all shadow-xs">
               {userInitial}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-400 border-2 border-[#12150c] rounded-full" />
@@ -186,20 +170,14 @@ export default function DashboardNavbar() {
         <div className="hidden md:flex items-center pl-1 border-l border-[#242b18]">
           <Link
             href="/dashboard/profile"
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#181c12] hover:bg-[#202617] border border-[#273019] hover:border-[#ffd600]/40 transition-colors group cursor-pointer"
+            className="p-1 rounded-full hover:ring-2 hover:ring-[#ffd600]/40 transition-all cursor-pointer group"
             title="Operator Profile & Security"
           >
             <div className="relative">
-              <div className={`w-8 h-8 rounded-full ${themeStyles.bg} border ${themeStyles.border} group-hover:scale-105 flex items-center justify-center font-bold text-xs ${themeStyles.text} transition-all`}>
+              <div className="w-8 h-8 rounded-full bg-[#232a17] border border-[#ffd600]/40 group-hover:border-[#ffd600] group-hover:scale-105 flex items-center justify-center font-bold text-xs text-[#ffd600] transition-all shadow-xs">
                 {userInitial}
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-400 border-2 border-[#12150c] rounded-full" />
-            </div>
-            <div className="hidden lg:block text-left pr-1">
-              <div className="text-xs font-semibold text-white group-hover:text-[#ffd600] transition-colors truncate max-w-[90px]">
-                {currentUser?.name?.split(" ")[0] || currentUser?.username || "Operator"}
-              </div>
-              <div className="text-[10px] text-zinc-400 font-mono leading-none">Profile</div>
             </div>
           </Link>
         </div>
