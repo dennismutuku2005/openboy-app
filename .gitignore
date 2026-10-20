@@ -1,8 +1,12 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ==============================================================================
+# OpenBoy App - Git Ignore
+# ==============================================================================
 
-# dependencies
-/node_modules
-/.pnp
+# ------------------------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------------------------
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -10,32 +14,80 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+# ------------------------------------------------------------------------------
+# Next.js Build & Compilation
+# ------------------------------------------------------------------------------
+.next/
+out/
+build/
+dist/
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
+# ------------------------------------------------------------------------------
+# Environment Variables & Secrets (Keep .env.example tracked)
+# ------------------------------------------------------------------------------
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.pem
+*.key
+*.cert
+*.crt
 
-# debug
+# ------------------------------------------------------------------------------
+# Debug & Execution Logs
+# ------------------------------------------------------------------------------
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# ------------------------------------------------------------------------------
+# Testing & Coverage
+# ------------------------------------------------------------------------------
+coverage/
+.nyc_output/
 
-# vercel
-.vercel
+# ------------------------------------------------------------------------------
+# Editor & IDE Directories
+# ------------------------------------------------------------------------------
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# typescript
+# ------------------------------------------------------------------------------
+# Operating System Files
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# ------------------------------------------------------------------------------
+# Tooling & Turbopack Cache
+# ------------------------------------------------------------------------------
+.turbo/
+.cache/
+.eslintcache
 *.tsbuildinfo
 next-env.d.ts
+
+# ------------------------------------------------------------------------------
+# Vercel Deployment
+# ------------------------------------------------------------------------------
+.vercel/
