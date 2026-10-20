@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight, CheckCircle2, Clock, Search } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { MetricCardsSkeleton, TableSkeletonRows } from "@/components/DashboardSkeletons";
 
 export default function UptimePage() {
-  const { monitors, isLoadingAuth } = useDashboard();
+  const router = useRouter();
+  const { monitors, logs, triggerPing, isLoadingAuth } = useDashboard();
   const [search, setSearch] = useState("");
 
   // Infinite load: 12 per batch (Automatic on scroll)
@@ -154,7 +157,12 @@ export default function UptimePage() {
                 const isFailing = mon.status === "failing";
 
                 return (
-                  <tr key={mon.id} className="hover:bg-[#202616] transition-colors">
+                  <tr
+                    key={mon.id}
+                    onClick={() => router.push(`/dashboard/executions?monitor=${mon.id}`)}
+                    className="hover:bg-[#202616] transition-colors cursor-pointer group"
+                    title="Click to view run history on executions page"
+                  >
                     {/* Status (Zero dots) */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <span
@@ -172,7 +180,13 @@ export default function UptimePage() {
 
                     {/* Monitor Name & URL */}
                     <td className="py-3.5 px-4 max-w-xs">
-                      <div className="font-semibold text-white truncate">{mon.name}</div>
+                      <Link
+                        href={`/dashboard/executions?monitor=${mon.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-semibold text-white truncate group-hover:text-[#ffd600] transition-colors block"
+                      >
+                        {mon.name}
+                      </Link>
                       <div className="text-[11px] text-zinc-400 font-mono truncate">{mon.url}</div>
                     </td>
 

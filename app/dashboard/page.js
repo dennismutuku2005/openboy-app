@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Play,
@@ -22,12 +23,14 @@ import {
   Loader2,
   Search,
   Filter,
+  History,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { scheduleTemplates } from "@/lib/monitorsData";
 import { DashboardPageSkeleton, TableSkeletonRows } from "@/components/DashboardSkeletons";
 
 export default function DashboardMainPage() {
+  const router = useRouter();
   const {
     monitors,
     logs,
@@ -371,7 +374,9 @@ export default function DashboardMainPage() {
                       return (
                         <tr
                           key={mon.id}
-                          className="hover:bg-[#1f2516] transition-colors group"
+                          onClick={() => router.push(`/dashboard/executions?monitor=${mon.id}`)}
+                          className="hover:bg-[#1f2516] transition-colors group cursor-pointer"
+                          title="Click to view run history on executions page"
                         >
                           {/* Status Badge (Zero dots, clean rectangular tag) */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
@@ -390,15 +395,20 @@ export default function DashboardMainPage() {
 
                           {/* Name & URL */}
                           <td className="py-3.5 px-4 max-w-sm">
-                            <div className="font-semibold text-white truncate group-hover:text-[#ffd600] transition-colors">
+                            <Link
+                              href={`/dashboard/executions?monitor=${mon.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-semibold text-white truncate group-hover:text-[#ffd600] transition-colors block"
+                            >
                               {mon.name}
-                            </div>
+                            </Link>
                             <div className="text-[11px] text-zinc-400 font-mono truncate flex items-center gap-1.5 mt-0.5">
                               <span className="truncate">{mon.url}</span>
                               <a
                                 href={mon.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
                                 className="text-zinc-500 hover:text-[#ffd600] shrink-0"
                                 title="Open URL in new tab"
                               >
@@ -461,10 +471,23 @@ export default function DashboardMainPage() {
                           {/* Action Buttons with Spinners */}
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
+                              {/* View Run History */}
+                              <Link
+                                href={`/dashboard/executions?monitor=${mon.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                title="View Execution History"
+                                className="p-1.5 rounded-md bg-[#242b18] hover:bg-[#2f3820] text-zinc-300 hover:text-[#ffd600] transition-colors inline-flex items-center justify-center cursor-pointer"
+                              >
+                                <History className="w-3.5 h-3.5" />
+                              </Link>
+
                               {/* Manual Ping with Spinner */}
                               <button
                                 type="button"
-                                onClick={() => handleManualPing(mon.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleManualPing(mon.id);
+                                }}
                                 disabled={isPinging}
                                 title="Ping Now (Manual Test)"
                                 className="p-1.5 rounded-md bg-[#242b18] hover:bg-[#2f3820] text-zinc-300 hover:text-[#ffd600] transition-colors cursor-pointer disabled:opacity-50"
@@ -479,7 +502,10 @@ export default function DashboardMainPage() {
                               {/* Pause / Resume */}
                               <button
                                 type="button"
-                                onClick={() => togglePause(mon.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePause(mon.id);
+                                }}
                                 title={isActive ? "Pause schedule" : "Resume schedule"}
                                 className="p-1.5 rounded-md bg-[#242b18] hover:bg-[#2f3820] text-zinc-300 hover:text-white transition-colors cursor-pointer"
                               >
@@ -493,7 +519,10 @@ export default function DashboardMainPage() {
                               {/* Delete Monitor */}
                               <button
                                 type="button"
-                                onClick={() => promptDeleteMonitor(mon)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  promptDeleteMonitor(mon);
+                                }}
                                 title="Delete monitor"
                                 className="p-1.5 rounded-md bg-[#242b18] hover:bg-rose-950/40 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
                               >
