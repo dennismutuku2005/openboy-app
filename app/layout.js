@@ -10,6 +10,9 @@ const inter = Inter({
 export const metadata = {
   title: "OpenBoy - High-Frequency Cron Jobs & API Uptime Monitoring",
   description: "Monitor and execute high-frequency cron jobs, webhook batchers, and uptime health pings starting from 10 seconds to custom intervals.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }) {
