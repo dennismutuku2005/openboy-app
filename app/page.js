@@ -22,7 +22,7 @@ export default function RootRedirectPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#14170e] flex flex-col items-center justify-center text-white">
-      <div className="mb-3 animate-pulse">
+      <div className="animate-pulse">
         <Image
           src="/logos/logo.png"
           alt="OpenBoy Logo"
@@ -32,9 +32,6 @@ export default function RootRedirectPage() {
           className="object-contain"
         />
       </div>
-      <p className="text-xs text-zinc-400">
-        Redirecting to OpenBoy...
-      </p>
     </div>
   );
 }
