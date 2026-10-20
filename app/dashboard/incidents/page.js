@@ -211,6 +211,11 @@ export default function IncidentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("all");
 
+  const [resolveModal, setResolveModal] = useState({ isOpen: false, incident: null });
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, incident: null });
+
+  const activeFailingMonitors = (monitors || []).filter((m) => m.status === "failing");
+
   const filteredIncidents = incidents.filter((inc) => {
     if (filterSeverity === "p1" && !inc.severity.includes("P1")) return false;
     if (filterSeverity === "p2" && !inc.severity.includes("P2")) return false;
@@ -388,15 +393,15 @@ export default function IncidentsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
             {activeFailingMonitors.map((mon) => (
-              <div key={mon.id} className="p-3 bg-black/40 border border-rose-900/40 rounded-lg flex items-center justify-between gap-3 text-xs font-mono">
-                <div>
+              <div key={mon.id} className="p-3 bg-black/40 border border-rose-900/40 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+                <div className="min-w-0">
                   <div className="text-white font-bold">{mon.name}</div>
-                  <div className="text-rose-400 text-[11px]">{mon.url} (Code: {mon.lastStatus || 503})</div>
+                  <div className="text-rose-400 text-[11px] truncate">{mon.url} (Code: {mon.lastStatus || 503})</div>
                 </div>
                 <button
                   type="button"
                   onClick={() => runDiagnostics(mon.id)}
-                  className="px-3 py-1.5 rounded bg-[#ffd600] text-black font-bold text-xs shrink-0 cursor-pointer"
+                  className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded bg-[#ffd600] hover:bg-[#ffe55b] text-black font-bold text-xs shrink-0 cursor-pointer text-center transition-colors"
                 >
                   Diagnose
                 </button>
@@ -577,18 +582,18 @@ export default function IncidentsPage() {
               Confirm that the root cause has been addressed and all automated health checks are passing. This will log the resolution timestamp and notify on-call engineers.
             </p>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setResolveModal({ isOpen: false, incident: null })}
-                className="px-4 py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmResolve}
-                className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
+                className="w-full sm:w-auto px-5 py-2.5 sm:py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors"
               >
                 Confirm Resolution
               </button>
@@ -615,18 +620,18 @@ export default function IncidentsPage() {
               Are you sure you want to delete this incident post-mortem? This action cannot be undone.
             </p>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setDeleteModal({ isOpen: false, incident: null })}
-                className="px-4 py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="px-5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs"
+                className="w-full sm:w-auto px-5 py-2.5 sm:py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors"
               >
                 Confirm Delete
               </button>
