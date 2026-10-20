@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 import {
   Clock,
   Activity,
-  Heart,
   Settings,
   Plus,
   Zap,
@@ -30,7 +29,6 @@ export default function DashboardSidebar() {
     { href: "/dashboard", label: "Schedules", icon: Clock },
     { href: "/dashboard/executions", label: "Executions", icon: History },
     { href: "/dashboard/uptime", label: "Uptime SLA", icon: Activity },
-    { href: "/dashboard/heartbeats", label: "Heartbeats", icon: Heart },
     { href: "/dashboard/batchers", label: "Batchers", icon: Server },
     { href: "/dashboard/incidents", label: "Incidents", icon: ShieldAlert },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },

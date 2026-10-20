@@ -37,12 +37,6 @@ export default function DashboardNavbar() {
         subtitle: "Global availability metrics, latency distributions, and health bars",
       };
     }
-    if (pathname === "/dashboard/heartbeats") {
-      return {
-        title: "Dead Man's Heartbeats",
-        subtitle: "Inverted cron monitors and silent job death snitches",
-      };
-    }
     if (pathname === "/dashboard/batchers") {
       return {
         title: "Batch Workers",
