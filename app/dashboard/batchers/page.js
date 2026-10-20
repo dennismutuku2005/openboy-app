@@ -231,6 +231,26 @@ export default function BatchersPage() {
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [runModal, setRunModal] = useState({
+    isOpen: false,
+    batcher: null,
+    running: false,
+    result: null,
+  });
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    batcher: null,
+  });
+  const [newBatchModal, setNewBatchModal] = useState(false);
+  const [newForm, setNewForm] = useState({
+    name: "",
+    jobKey: "",
+    schedule: "Every 10m",
+    cronExpr: "*/10 * * * *",
+    targetQueue: "",
+    description: "",
+  });
+
   // Filtered batchers list
   const filteredBatchers = batchers.filter((b) => {
     if (filter === "active" && b.status !== "active") return false;
@@ -690,11 +710,11 @@ export default function BatchersPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
                   <button
                     type="button"
                     onClick={() => setRunModal({ isOpen: false, batcher: null, running: false, result: null })}
-                    className="px-4 py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white"
+                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
                   >
                     Cancel
                   </button>
@@ -702,7 +722,7 @@ export default function BatchersPage() {
                     type="button"
                     onClick={executeBatcher}
                     disabled={runModal.running}
-                    className="px-5 py-2.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs flex items-center gap-2 disabled:opacity-50"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
                   >
                     {runModal.running ? (
                       <>
@@ -733,11 +753,11 @@ export default function BatchersPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-2">
                   <button
                     type="button"
                     onClick={() => setRunModal({ isOpen: false, batcher: null, running: false, result: null })}
-                    className="px-5 py-2 rounded-lg bg-[#ffd600] text-black font-bold text-xs"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#ffd600] text-black font-bold text-xs transition-colors"
                   >
                     Close
                   </button>
@@ -768,18 +788,18 @@ export default function BatchersPage() {
               will halt permanently.
             </p>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setDeleteModal({ isOpen: false, batcher: null })}
-                className="px-4 py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="px-5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors"
               >
                 Confirm Delete
               </button>
@@ -883,17 +903,17 @@ export default function BatchersPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setNewBatchModal(false)}
-                  className="px-4 py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs transition-colors"
                 >
                   Save Worker
                 </button>

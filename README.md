@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/logos/logo.png" width="96" height="96" alt="OpenBoy Logo" />
+  <img src="public/logos/logo.png" width="288" height="288" alt="OpenBoy Logo" />
 </p>
 
 <h1 align="center">OpenBoy</h1>
