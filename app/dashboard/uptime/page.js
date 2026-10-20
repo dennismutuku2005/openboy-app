@@ -3,9 +3,23 @@
 import { useState } from "react";
 import { Activity, ArrowUpRight, CheckCircle2, Clock } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
+import { MetricCardsSkeleton, MonitorCardsSkeleton } from "@/components/DashboardSkeletons";
 
 export default function UptimePage() {
-  const { monitors } = useDashboard();
+  const { monitors, isLoadingAuth } = useDashboard();
+
+  if (isLoadingAuth) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2 animate-pulse">
+          <div className="h-7 w-64 bg-[#28321b] rounded"></div>
+          <div className="h-3 w-96 bg-[#1f2615] rounded"></div>
+        </div>
+        <MetricCardsSkeleton count={4} />
+        <MonitorCardsSkeleton count={3} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -79,7 +93,7 @@ export default function UptimePage() {
                   <span className="text-xs font-mono font-bold text-emerald-400 block">
                     {mon.uptime || "100%"}
                   </span>
-                  <span className="text-[10px] text-zinc-500 uppercase">
+                  <span className="text-xs text-zinc-400 font-mono">
                     {mon.intervalLabel}
                   </span>
                 </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -11,21 +12,27 @@ import {
   Plus,
   Zap,
   Layers,
-  LogOut,
-  User,
-  Cpu,
   AlertTriangle,
+  History,
+  ShieldAlert,
+  Server,
+  Loader2,
 } from "lucide-react";
 import { useDashboard } from "./DashboardContext";
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
   const { monitors, logs, openCreateModal, logout, currentUser, setActiveFilter, activeFilter } = useDashboard();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  // Professional cron system core pages
   const mainNav = [
     { href: "/dashboard", label: "Schedules", icon: Clock },
-    { href: "/dashboard/uptime", label: "Uptime", icon: Activity },
+    { href: "/dashboard/executions", label: "Executions", icon: History },
+    { href: "/dashboard/uptime", label: "Uptime SLA", icon: Activity },
     { href: "/dashboard/heartbeats", label: "Heartbeats", icon: Heart },
+    { href: "/dashboard/batchers", label: "Batchers", icon: Server },
+    { href: "/dashboard/incidents", label: "Incidents", icon: ShieldAlert },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
 
@@ -37,53 +44,46 @@ export default function DashboardSidebar() {
 
   const errorCount = logs.filter((l) => !l.ok || (l.status && l.status >= 400)).length;
 
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      logout();
+    }, 350);
+  };
+
   return (
     <aside className="w-64 sm:w-72 bg-[#12150c] border-r border-[#242b18] flex flex-col justify-between shrink-0 h-screen sticky top-0 overflow-y-auto z-30 select-none">
       {/* Top Section */}
       <div className="p-5 space-y-6">
-        {/* Brand Header */}
-        <div className="flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-[#1f2515] border border-[#343e23] flex items-center justify-center p-1.5 transition-all group-hover:border-[#ffd600]">
-              <Image
-                src="/logos/logo.png"
-                alt="OpenBoy Logo"
-                width={28}
-                height={28}
-                priority
-                className="object-contain"
-              />
-            </div>
-            <div>
-              <span className="text-base font-bold text-white tracking-tight block">
-                OpenBoy
-              </span>
-              <span className="text-[10px] text-zinc-400 font-mono tracking-wider uppercase block">
-                Internal Console
-              </span>
-            </div>
+        {/* Centered Logo alone with no background, no border, and no text */}
+        <div className="pt-2 pb-1 flex items-center justify-center w-full">
+          <Link href="/dashboard" className="flex items-center justify-center transition-transform hover:scale-105" title="OpenBoy Internal Console">
+            <Image
+              src="/logos/logo.png"
+              alt="OpenBoy Logo"
+              width={56}
+              height={56}
+              priority
+              className="object-contain"
+            />
           </Link>
-
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
-            v2.7
-          </span>
         </div>
 
-        {/* Primary Action: Create Monitor */}
+        {/* Primary Action Button: Exact size and style of the Login Button */}
         <div>
           <button
             type="button"
             onClick={() => openCreateModal()}
-            className="w-full py-2.5 px-4 bg-[#ffd600] hover:bg-[#eed000] text-black font-semibold text-xs rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+            className="w-full py-3.5 px-6 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <Plus className="w-4 h-4 stroke-[3]" />
             <span>Create monitor</span>
           </button>
         </div>
 
-        {/* Core Navigation */}
+        {/* Core Navigation for a Professional Cron System */}
         <div className="space-y-1">
-          <span className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase px-3 block mb-2">
+          <span className="text-xs font-semibold text-zinc-400 px-3 block mb-2">
             Navigation
           </span>
           {mainNav.map((item) => {
@@ -97,19 +97,24 @@ export default function DashboardSidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-medium transition-colors ${
                   isActive
                     ? "bg-[#212716] text-[#ffd600] font-semibold border-l-2 border-[#ffd600]"
                     : "text-zinc-400 hover:text-white hover:bg-[#1a1e12]"
                 }`}
               >
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                   <Icon className={`w-4 h-4 ${isActive ? "text-[#ffd600]" : "text-zinc-400"}`} />
                   <span>{item.label}</span>
                 </div>
                 {item.href === "/dashboard" && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#2a331c] text-zinc-300 font-mono">
+                  <span className="text-[11px] px-2 py-0.5 rounded bg-[#2a331c] text-zinc-300 font-mono">
                     {monitors.length}
+                  </span>
+                )}
+                {item.href === "/dashboard/incidents" && errorCount > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono font-bold">
+                    {errorCount}
                   </span>
                 )}
               </Link>
@@ -117,9 +122,9 @@ export default function DashboardSidebar() {
           })}
         </div>
 
-        {/* Cadences Quick Filters */}
-        <div className="space-y-1 pt-2 border-t border-[#222816]">
-          <span className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase px-3 block mb-2">
+        {/* Cadences Filters */}
+        <div className="space-y-1 pt-3 border-t border-[#222816]">
+          <span className="text-xs font-semibold text-zinc-400 px-3 block mb-2">
             Cron Cadences
           </span>
           {cadenceFilters.map((cadence) => {
@@ -131,86 +136,73 @@ export default function DashboardSidebar() {
                 key={cadence.id}
                 type="button"
                 onClick={() => setActiveFilter(isFilterActive ? "all" : cadence.id)}
-                className={`w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                className={`w-full flex items-center justify-between px-3.5 py-2 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                   isFilterActive
                     ? "bg-[#28311a] text-white font-semibold"
                     : "text-zinc-400 hover:text-zinc-200 hover:bg-[#191d11]"
                 }`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <Icon className="w-3.5 h-3.5 text-[#ffd600]" />
                   <span>{cadence.label}</span>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-400">
+                <span className="text-xs font-mono text-zinc-400">
                   {cadence.count}
                 </span>
               </button>
             );
           })}
 
-          {/* Errors indicator */}
+          {/* Failing filter */}
           <button
             type="button"
             onClick={() => setActiveFilter(activeFilter === "failing" ? "all" : "failing")}
-            className={`w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer mt-1 ${
+            className={`w-full flex items-center justify-between px-3.5 py-2 rounded-md text-xs font-medium transition-colors cursor-pointer mt-1 ${
               activeFilter === "failing"
                 ? "bg-rose-950/40 text-rose-300 font-semibold"
                 : "text-zinc-400 hover:text-rose-300 hover:bg-[#191d11]"
             }`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
               <span>Failing / Errors</span>
             </div>
             {errorCount > 0 && (
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 font-bold">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
                 {errorCount}
               </span>
             )}
           </button>
         </div>
-
-        {/* Engine Cluster Status Box */}
-        <div className="p-3 bg-[#181d10] border border-[#262f18] rounded-lg space-y-1.5 text-[11px]">
-          <div className="flex items-center justify-between">
-            <span className="text-zinc-400 flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Cron Dispatcher</span>
-            </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Engine Active"></span>
-          </div>
-          <div className="flex items-center justify-between font-mono text-zinc-400 text-[10px]">
-            <span>Min Interval: 10s</span>
-            <span>Batchers: 10m</span>
-          </div>
-        </div>
       </div>
 
-      {/* Bottom Section: Operator Profile & Sign Out */}
+      {/* Bottom Section: Operator Profile & Clean Text-Only Logout Button */}
       <div className="p-4 border-t border-[#222816] bg-[#10120a] space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#232a17] border border-[#343e22] flex items-center justify-center font-bold text-xs text-[#ffd600]">
-              {(currentUser?.username || "A").slice(0, 1).toUpperCase()}
-            </div>
-            <div className="overflow-hidden">
-              <div className="text-xs font-semibold text-white truncate">
-                {currentUser?.username || "admin"}
-              </div>
-              <div className="text-[10px] text-zinc-400">Internal Operator</div>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-[#232a17] border border-[#343e22] flex items-center justify-center font-bold text-sm text-[#ffd600]">
+            {(currentUser?.username || "A").slice(0, 1).toUpperCase()}
           </div>
-
-          {/* Logout button */}
-          <button
-            type="button"
-            onClick={logout}
-            title="Sign out of OpenBoy"
-            className="p-1.5 rounded-md hover:bg-rose-950/30 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          <div className="overflow-hidden flex-1">
+            <div className="text-xs font-semibold text-white truncate">
+              {currentUser?.username || "admin"}
+            </div>
+            <div className="text-xs text-zinc-400">Operator</div>
+          </div>
         </div>
+
+        {/* Dedicated Logout Button: Clean text-only without icon, with spinner when clicked */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="w-full py-2.5 px-4 rounded-lg border border-[#2b351e] bg-[#181c12] hover:bg-rose-950/40 text-zinc-300 hover:text-rose-200 transition-colors cursor-pointer flex items-center justify-center text-xs font-semibold disabled:opacity-60"
+        >
+          {isLoggingOut ? (
+            <Loader2 className="w-4 h-4 animate-spin text-[#ffd600]" />
+          ) : (
+            <span>Sign out</span>
+          )}
+        </button>
       </div>
     </aside>
   );

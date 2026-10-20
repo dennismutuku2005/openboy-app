@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, ChevronDown, ChevronUp, Bell, Check, Globe } from "lucide-react";
+import { X, ChevronDown, ChevronUp, Bell, Check, Globe, Loader2 } from "lucide-react";
 import { useDashboard } from "./DashboardContext";
 
 export default function CreateMonitorModal() {
   const { isModalOpen, closeCreateModal, addMonitor, modalInitialData } = useDashboard();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
@@ -119,8 +120,12 @@ export default function CreateMonitorModal() {
       ],
     };
 
-    addMonitor(newMonitor);
-    closeCreateModal();
+    setIsSubmitting(true);
+    setTimeout(() => {
+      addMonitor(newMonitor);
+      setIsSubmitting(false);
+      closeCreateModal();
+    }, 300);
   };
 
   return (
@@ -128,7 +133,7 @@ export default function CreateMonitorModal() {
       <div className="w-full max-w-lg bg-[#1a1e12] border border-[#2b331f] rounded-xl shadow-2xl overflow-hidden text-[#f5f6f0]">
         {/* Header matching Image 3 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#2b331f]/60">
-          <h2 className="text-base font-semibold text-white tracking-wide">
+          <h2 className="text-base font-semibold text-white">
             Create monitor
           </h2>
           <button
@@ -262,9 +267,9 @@ export default function CreateMonitorModal() {
             </div>
           )}
 
-          {/* Notifications Section matching Image 3 */}
+          {/* Notifications Section */}
           <div>
-            <span className="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+            <span className="block text-xs font-semibold text-zinc-300 mb-2">
               Notifications
             </span>
             <div className="space-y-2 bg-[#202516] p-3.5 rounded-md border border-[#2e3620]">
@@ -440,13 +445,17 @@ export default function CreateMonitorModal() {
             )}
           </div>
 
-          {/* Modal Footer / Submit Button from Image 3 */}
+          {/* Modal Footer / Submit Button */}
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-2.5 px-4 bg-[#ffd600] hover:bg-[#eed000] text-black font-semibold text-sm rounded-md transition-all shadow hover:shadow-md cursor-pointer active:scale-[0.99] flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full py-3 px-4 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-sm rounded-lg transition-all shadow hover:shadow-md cursor-pointer active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              Add monitor
+              {isSubmitting ? (
+                <Loader2 className="w-4 h-4 animate-spin text-black" />
+              ) : null}
+              <span>{isSubmitting ? "Creating monitor..." : "Add monitor"}</span>
             </button>
           </div>
         </form>

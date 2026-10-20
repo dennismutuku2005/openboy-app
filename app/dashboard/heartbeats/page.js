@@ -78,21 +78,18 @@ export default function HeartbeatsPage() {
             className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-5 space-y-4"
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <div>
-                  <h3 className="text-sm font-semibold text-white">{hb.name}</h3>
-                  <span className="text-xs text-zinc-400">
-                    Expected {hb.schedule} • Grace: {hb.gracePeriod}
-                  </span>
-                </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">{hb.name}</h3>
+                <span className="text-xs text-zinc-400">
+                  Expected {hb.schedule} - Grace: {hb.gracePeriod}
+                </span>
               </div>
 
               <div className="text-right">
-                <span className="text-xs font-mono font-bold text-emerald-400 block">
-                  HEALTHY
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 inline-block">
+                  Healthy
                 </span>
-                <span className="text-[10px] text-zinc-500">
+                <span className="text-xs text-zinc-400 block mt-1">
                   Last ping: {hb.lastPing}
                 </span>
               </div>

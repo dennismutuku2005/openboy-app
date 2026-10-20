@@ -19,20 +19,23 @@ import {
   Layers,
   FileCode2,
   Terminal,
+  Loader2,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { scheduleTemplates } from "@/lib/monitorsData";
+import { DashboardPageSkeleton } from "@/components/DashboardSkeletons";
 
 export default function DashboardMainPage() {
   const {
     monitors,
     logs,
     openCreateModal,
-    deleteMonitor,
+    promptDeleteMonitor,
     togglePause,
     triggerPing,
     activeFilter,
     setActiveFilter,
+    isLoadingAuth,
   } = useDashboard();
 
   const [activeTab, setActiveTab] = useState("schedules"); // "schedules" | "templates" | "logs" | "errors"
@@ -114,6 +117,10 @@ export default function DashboardMainPage() {
 
   const errorLogs = logs.filter((l) => !l.ok || (l.status && l.status >= 400));
 
+  if (isLoadingAuth) {
+    return <DashboardPageSkeleton />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Header & Sub-Tabs */}
@@ -133,7 +140,7 @@ export default function DashboardMainPage() {
             </button>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Internal Cron Engine &bull; Minimum cadence: 10s &bull; Standard: 30s &bull; Batchers: 10m
+            High-frequency monitors, batch workers, and automated API health telemetry.
           </p>
         </div>
 
@@ -149,7 +156,7 @@ export default function DashboardMainPage() {
             }`}
           >
             <span>Schedule list</span>
-            <span className="ml-1.5 text-[10px] px-1.5 py-0.2 rounded-full bg-[#1b2013] text-[#ffd600] font-mono">
+            <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-[#1b2013] text-[#ffd600] font-mono">
               {monitors.length}
             </span>
           </button>
@@ -176,7 +183,7 @@ export default function DashboardMainPage() {
             }`}
           >
             <span>Live Logs</span>
-            <span className="ml-1.5 text-[10px] px-1.5 py-0.2 rounded-full bg-[#1b2013] text-zinc-300 font-mono">
+            <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-[#1b2013] text-zinc-300 font-mono">
               {logs.length}
             </span>
           </button>
@@ -195,7 +202,7 @@ export default function DashboardMainPage() {
               <span>Errors</span>
             </span>
             {errorLogs.length > 0 && (
-              <span className="ml-1.5 text-[10px] px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 font-mono font-bold">
+              <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono font-bold">
                 {errorLogs.length}
               </span>
             )}
@@ -281,19 +288,24 @@ export default function DashboardMainPage() {
                       {/* Left: Monitor Name & URL */}
                       <div className="space-y-1.5 flex-1 min-w-0">
                         <div className="flex items-center gap-2.5 flex-wrap">
-                          {/* Live Status indicator */}
+                          {/* Live Status badge (Clean text badge, zero dot) */}
                           <span
-                            className={`w-2.5 h-2.5 rounded-full ${
+                            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
                               mon.status === "active"
-                                ? "bg-emerald-400 animate-pulse"
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
                                 : mon.status === "failing"
-                                ? "bg-rose-500"
-                                : "bg-zinc-500"
+                                ? "bg-rose-500/20 text-rose-300 border-rose-500/30"
+                                : "bg-[#252c19] text-zinc-400 border-[#384328]"
                             }`}
-                            title={`Status: ${mon.status}`}
-                          ></span>
+                          >
+                            {mon.status === "active"
+                              ? "Active"
+                              : mon.status === "failing"
+                              ? "Failing"
+                              : "Paused"}
+                          </span>
 
-                          <h3 className="text-sm font-semibold text-white tracking-wide truncate">
+                          <h3 className="text-sm font-semibold text-white truncate">
                             {mon.name}
                           </h3>
 
@@ -304,7 +316,7 @@ export default function DashboardMainPage() {
 
                           {/* Interval badge */}
                           <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded flex items-center gap-1 ${
                               is10s
                                 ? "bg-[#ffd600]/20 text-[#ffd600] border border-[#ffd600]/40 font-mono"
                                 : is30s
@@ -338,7 +350,7 @@ export default function DashboardMainPage() {
                         {/* Live Countdown */}
                         {mon.status === "active" ? (
                           <div className="text-right">
-                            <span className="text-[10px] uppercase text-zinc-500 font-medium block">
+                            <span className="text-xs text-zinc-400 font-medium block">
                               Next Ping
                             </span>
                             <span className="text-xs font-mono font-semibold text-[#ffd600]">
@@ -347,7 +359,7 @@ export default function DashboardMainPage() {
                           </div>
                         ) : (
                           <div className="text-right">
-                            <span className="text-[10px] uppercase text-zinc-500 font-medium block">
+                            <span className="text-xs text-zinc-400 font-medium block">
                               Status
                             </span>
                             <span className="text-xs font-medium text-zinc-400">
@@ -358,7 +370,7 @@ export default function DashboardMainPage() {
 
                         {/* Latency */}
                         <div className="text-right">
-                          <span className="text-[10px] uppercase text-zinc-500 font-medium block">
+                          <span className="text-xs text-zinc-400 font-medium block">
                             Latency
                           </span>
                           <span
@@ -376,7 +388,7 @@ export default function DashboardMainPage() {
 
                         {/* Last Code */}
                         <div className="text-right">
-                          <span className="text-[10px] uppercase text-zinc-500 font-medium block">
+                          <span className="text-xs text-zinc-400 font-medium block">
                             Last Code
                           </span>
                           <span
@@ -392,7 +404,7 @@ export default function DashboardMainPage() {
 
                         {/* Uptime */}
                         <div className="text-right hidden sm:block">
-                          <span className="text-[10px] uppercase text-zinc-500 font-medium block">
+                          <span className="text-xs text-zinc-400 font-medium block">
                             Uptime
                           </span>
                           <span className="text-xs font-semibold text-white">
@@ -431,14 +443,10 @@ export default function DashboardMainPage() {
                             )}
                           </button>
 
-                          {/* Delete */}
+                          {/* Delete with custom confirmation modal */}
                           <button
                             type="button"
-                            onClick={() => {
-                              if (confirm(`Delete monitor "${mon.name}"?`)) {
-                                deleteMonitor(mon.id);
-                              }
-                            }}
+                            onClick={() => promptDeleteMonitor(mon)}
                             title="Delete monitor"
                             className="p-1.5 rounded-md bg-[#242b18] hover:bg-rose-950/40 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
                           >
@@ -501,7 +509,7 @@ export default function DashboardMainPage() {
                 className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-5 hover:border-[#ffd600]/60 transition-all cursor-pointer group flex flex-col justify-between"
               >
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-semibold text-[#ffd600] uppercase tracking-wider block">
+                  <span className="text-xs font-semibold text-[#ffd600] block">
                     Daily Cron
                   </span>
                   <h3 className="text-sm font-semibold text-white group-hover:text-[#ffd600] transition-colors">
@@ -532,7 +540,7 @@ export default function DashboardMainPage() {
                 className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-5 hover:border-[#ffd600]/60 transition-all cursor-pointer group flex flex-col justify-between"
               >
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider block">
+                  <span className="text-xs font-semibold text-emerald-400 block">
                     Multi-day Schedule
                   </span>
                   <h3 className="text-sm font-semibold text-white group-hover:text-[#ffd600] transition-colors">
@@ -563,7 +571,7 @@ export default function DashboardMainPage() {
                 className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-5 hover:border-[#ffd600]/60 transition-all cursor-pointer group flex flex-col justify-between"
               >
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider block">
+                  <span className="text-xs font-semibold text-amber-400 block">
                     Standard Default
                   </span>
                   <h3 className="text-sm font-semibold text-white group-hover:text-[#ffd600] transition-colors">
@@ -594,7 +602,7 @@ export default function DashboardMainPage() {
                 className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-5 hover:border-[#ffd600]/60 transition-all cursor-pointer group flex flex-col justify-between"
               >
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-semibold text-[#ffd600] uppercase tracking-wider flex items-center gap-1">
+                  <span className="text-xs font-semibold text-[#ffd600] flex items-center gap-1">
                     <Zap className="w-3 h-3 text-[#ffd600]" />
                     High Frequency (Least 10s)
                   </span>
@@ -626,7 +634,7 @@ export default function DashboardMainPage() {
                 className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-5 hover:border-[#ffd600]/60 transition-all cursor-pointer group flex flex-col justify-between"
               >
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-semibold text-sky-400 uppercase tracking-wider block">
+                  <span className="text-xs font-semibold text-sky-400 block">
                     Batch Worker Trigger
                   </span>
                   <h3 className="text-sm font-semibold text-white group-hover:text-[#ffd600] transition-colors">
@@ -711,7 +719,7 @@ export default function DashboardMainPage() {
           <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-[#212717] text-zinc-400 uppercase text-[10px] tracking-wider border-b border-[#2b341f]">
+                <thead className="bg-[#212717] text-zinc-300 text-xs font-semibold border-b border-[#2b341f]">
                   <tr>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Monitor / URL</th>
@@ -814,7 +822,7 @@ export default function DashboardMainPage() {
                   </div>
 
                   <div className="font-mono text-zinc-300 break-all">
-                    Endpoint: {err.url} ({err.method}) • Latency: {err.latency}ms
+                    Endpoint: {err.url} ({err.method}) - Latency: {err.latency}ms
                   </div>
 
                   {err.error && (

@@ -16,6 +16,10 @@ export function DashboardProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
+  // Custom modal dialogs (no browser alert/confirm!)
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, monitor: null });
+  const [pingResultDialog, setPingResultDialog] = useState({ isOpen: false, result: null });
+
   // Auth check & load data
   useEffect(() => {
     try {
@@ -128,9 +132,20 @@ export function DashboardProvider({ children }) {
     }
   };
 
-  const deleteMonitor = (id) => {
-    const updated = monitors.filter((m) => m.id !== id);
-    saveMonitors(updated);
+  const promptDeleteMonitor = (monitor) => {
+    setDeleteDialog({ isOpen: true, monitor });
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteDialog({ isOpen: false, monitor: null });
+  };
+
+  const confirmDelete = () => {
+    if (deleteDialog.monitor) {
+      const updated = monitors.filter((m) => m.id !== deleteDialog.monitor.id);
+      saveMonitors(updated);
+    }
+    closeDeleteDialog();
   };
 
   const togglePause = (id) => {
@@ -195,6 +210,13 @@ export function DashboardProvider({ children }) {
       return m;
     });
     saveMonitors(updated);
+
+    // Open detailed execution inspect modal
+    setPingResultDialog({ isOpen: true, result: newLog });
+  };
+
+  const closePingResultDialog = () => {
+    setPingResultDialog({ isOpen: false, result: null });
   };
 
   const openCreateModal = (initial = null) => {
@@ -217,12 +239,17 @@ export function DashboardProvider({ children }) {
         activeFilter,
         currentUser,
         isLoadingAuth,
+        deleteDialog,
+        pingResultDialog,
         logout,
         setActiveFilter,
         openCreateModal,
         closeCreateModal,
         addMonitor,
-        deleteMonitor,
+        promptDeleteMonitor,
+        closeDeleteDialog,
+        confirmDelete,
+        closePingResultDialog,
         togglePause,
         triggerPing,
       }}

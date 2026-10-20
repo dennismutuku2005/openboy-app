@@ -1,8 +1,9 @@
 import { DashboardProvider } from "@/components/DashboardContext";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardNavbar from "@/components/DashboardNavbar";
-import DashboardFooter from "@/components/DashboardFooter";
 import CreateMonitorModal from "@/components/CreateMonitorModal";
+import DeleteConfirmModal from "@/components/DeleteConfirmModal";
+import PingResultModal from "@/components/PingResultModal";
 
 export const metadata = {
   title: "OpenBoy Internal Console - Cron Monitors & Batchers",
@@ -16,17 +17,18 @@ export default function DashboardLayout({ children }) {
         {/* Always Open Left Sidebar */}
         <DashboardSidebar />
 
-        {/* Main Content Pane */}
+        {/* End-to-end Left-oriented Content Pane (No Footer, Full Width) */}
         <div className="flex-1 flex flex-col min-w-0 min-h-screen">
           <DashboardNavbar />
-          <main className="flex-1 p-6 sm:p-8 max-w-7xl w-full">
+          <main className="flex-1 p-6 sm:p-8 w-full max-w-none">
             {children}
           </main>
-          <DashboardFooter />
         </div>
 
-        {/* Global Modal */}
+        {/* Custom Modals & Dialogs (No browser alert/confirm!) */}
         <CreateMonitorModal />
+        <DeleteConfirmModal />
+        <PingResultModal />
       </div>
     </DashboardProvider>
   );
