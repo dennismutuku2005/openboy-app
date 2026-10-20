@@ -28,6 +28,34 @@ export function MetricCardsSkeleton({ count = 4 }) {
   );
 }
 
+export function MonitorCardsSkeleton({ count = 4 }) {
+  return (
+    <div className="grid grid-cols-1 gap-4">
+      {Array.from({ length: count }).map((_, idx) => (
+        <div
+          key={idx}
+          className="p-5 rounded-xl bg-[#181c12] border border-[#273019] space-y-4 animate-pulse"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-2.5 flex-1">
+              <div className="flex items-center gap-2.5">
+                <div className="h-4 w-12 bg-[#28321b] rounded"></div>
+                <div className="h-4 w-48 bg-[#28321b] rounded"></div>
+                <div className="h-4 w-12 bg-[#212816] rounded"></div>
+                <div className="h-4 w-14 bg-[#212816] rounded"></div>
+              </div>
+              <div className="h-3.5 w-72 bg-[#202715] rounded font-mono"></div>
+            </div>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <div className="h-8 w-24 bg-[#28321b] rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function TableSkeletonRows({ rows = 12 }) {
   return Array.from({ length: rows }).map((_, rIdx) => (
     <tr key={"skel-row-" + rIdx} className="border-b border-[#202615] animate-pulse">
