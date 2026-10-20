@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #14170e;
+  --foreground: #f4f5ee;
+  
+  --openboy-bg: #14170e;
+  --openboy-surface: #1b1f13;
+  --openboy-surface-hover: #222718;
+  --openboy-surface-card: #1f2416;
+  --openboy-border: #2c331f;
+  --openboy-border-light: #3e482b;
+  --openboy-yellow: #ffd600;
+  --openboy-yellow-hover: #eed000;
+  --openboy-mint: #4ade80;
+  --openboy-text-main: #f5f6f0;
+  --openboy-text-muted: #9ba187;
+  --openboy-text-dim: #6b7359;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-openboy-bg: var(--openboy-bg);
+  --color-openboy-surface: var(--openboy-surface);
+  --color-openboy-surface-hover: var(--openboy-surface-hover);
+  --color-openboy-surface-card: var(--openboy-surface-card);
+  --color-openboy-border: var(--openboy-border);
+  --color-openboy-border-light: var(--openboy-border-light);
+  --color-openboy-yellow: var(--openboy-yellow);
+  --color-openboy-yellow-hover: var(--openboy-yellow-hover);
+  --color-openboy-mint: var(--openboy-mint);
+  --color-openboy-text-main: var(--openboy-text-main);
+  --color-openboy-text-muted: var(--openboy-text-muted);
+  --color-openboy-text-dim: var(--openboy-text-dim);
+  --font-sans: var(--font-inter);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #14170e;
+  color: #f4f5ee;
+  font-family: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar for dark olive theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #14170e;
+}
+::-webkit-scrollbar-thumb {
+  background: #2c331f;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475432;
+}
+
+/* Electric yellow button glow effect */
+.btn-yellow {
+  background-color: #ffd600;
+  color: #0d0f07;
+  font-weight: 600;
+  transition: all 0.15s ease-in-out;
+}
+.btn-yellow:hover {
+  background-color: #eed000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 214, 0, 0.25);
+}
+.btn-yellow:active {
+  transform: translateY(0);
+}
+
+/* Olive card border styling */
+.openboy-card {
+  background-color: #1b1f13;
+  border: 1px solid #2c331f;
+  border-radius: 0.5rem;
 }
