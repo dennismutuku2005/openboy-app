@@ -34,15 +34,7 @@ export function DashboardProvider({ children }) {
           username: parsed.username || "admin",
           name: parsed.name || "Dennis Mutuku",
           email: parsed.email || `${parsed.username || "admin"}@openboy.dev`,
-          role: parsed.role || "Cluster Operator",
-          organization: parsed.organization || "OpenBoy Core Engineering",
-          timezone: parsed.timezone || "UTC+03:00 (Nairobi, East Africa)",
-          avatarUrl: parsed.avatarUrl || "",
-          avatarBg: parsed.avatarBg || "from-amber-500 to-[#ffd600]",
           apiKey: parsed.apiKey || "ob_live_8f99e3a07c1264b91",
-          phone: parsed.phone || "+254 700 000 000",
-          loginTime: parsed.loginTime || new Date().toLocaleTimeString(),
-          twoFactor: parsed.twoFactor !== undefined ? parsed.twoFactor : true,
         };
         setCurrentUser(userWithDefaults);
         try {

@@ -233,7 +233,9 @@ export default function DashboardSidebar() {
             <div className="text-xs font-semibold text-white truncate group-hover:text-[#ffd600] transition-colors">
               {currentUser?.name || currentUser?.username || "admin"}
             </div>
-            <div className="text-xs text-zinc-400">Operator Profile</div>
+            <div className="text-xs text-zinc-500 truncate">
+              {currentUser?.email || "Account"}
+            </div>
           </div>
         </Link>
 

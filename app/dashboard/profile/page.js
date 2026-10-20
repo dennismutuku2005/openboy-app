@@ -2,27 +2,13 @@
 
 import { useState, useEffect } from "react";
 import {
-  User,
-  Shield,
   KeyRound,
-  Lock,
   Eye,
   EyeOff,
   Check,
-  X,
   Copy,
-  CheckCircle2,
   AlertTriangle,
   RotateCw,
-  Terminal,
-  Clock,
-  Sparkles,
-  Smartphone,
-  Globe,
-  Mail,
-  Building,
-  Radio,
-  FileCode2,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { MetricCardsSkeleton } from "@/components/DashboardSkeletons";
@@ -34,10 +20,6 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
-  const [organization, setOrganization] = useState("");
-  const [timezone, setTimezone] = useState("UTC+03:00 (Nairobi, East Africa)");
-  const [phone, setPhone] = useState("");
 
   // Profile save toast state
   const [profileSaved, setProfileSaved] = useState(false);
@@ -65,10 +47,6 @@ export default function ProfilePage() {
       setName(currentUser.name || "Dennis Mutuku");
       setUsername(currentUser.username || "admin");
       setEmail(currentUser.email || "dennis@openboy.dev");
-      setRole(currentUser.role || "Cluster Operator");
-      setOrganization(currentUser.organization || "OpenBoy Core Engineering");
-      setTimezone(currentUser.timezone || "UTC+03:00 (Nairobi, East Africa)");
-      setPhone(currentUser.phone || "+254 700 000 000");
       if (currentUser.apiKey) setApiToken(currentUser.apiKey);
     }
   }, [currentUser]);
@@ -98,9 +76,6 @@ export default function ProfilePage() {
       updateProfile({
         name,
         email,
-        organization,
-        timezone,
-        phone,
       });
       setIsSavingProfile(false);
       setProfileSaved(true);
@@ -140,7 +115,7 @@ export default function ProfilePage() {
       setIsUpdatingPassword(false);
 
       if (res.success) {
-        setPasswordSuccess("Security password updated successfully. All active sessions verified.");
+        setPasswordSuccess("Password updated successfully.");
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
@@ -181,88 +156,62 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header (Strictly NO icon next to title per design system protocol) */}
+      {/* Header (No icon next to title) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#242b18]">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
-            Profile & Account Security
+            Account & Security
           </h1>
           <p className="text-xs text-zinc-400 mt-1">
-            Operator identity, security credentials, avatar personalization, and cryptographic tokens.
+            Manage your account identity, password, and API token.
           </p>
         </div>
 
-        {/* Status Indicator (Zero dots, clean rectangular tag) */}
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
-            TLS 1.3 Verified
-          </span>
-          <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded border bg-[#1a1f12] text-[#ffd600] border-[#2f3920]">
-            Cluster Admin
+            Active
           </span>
         </div>
       </div>
 
       {/* Profile Overview Card with Circular Avatar */}
       <div className="p-5 sm:p-6 rounded-xl bg-[#181c12] border border-[#273019] shadow-lg">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-          <div className="flex items-center gap-4">
-            {/* Live Interactive Circular Avatar */}
-            <div className="relative">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#232a17] border-2 border-[#ffd600]/60 flex items-center justify-center font-bold text-2xl sm:text-3xl text-[#ffd600] shadow-xl">
-                {userInitial}
-              </div>
-              <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-emerald-400 border-2 border-[#181c12] rounded-full" />
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#232a17] border-2 border-[#ffd600]/60 flex items-center justify-center font-bold text-2xl sm:text-3xl text-[#ffd600] shadow-xl">
+              {userInitial}
             </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-lg font-bold text-white">{name || "Dennis Mutuku"}</h2>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-[#202716] text-[#ffd600] border-[#344023]">
-                  @{username || "admin"}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-400">{email || "dennis@openboy.dev"}</p>
-              <div className="text-[11px] text-zinc-500 font-mono">
-                {role} • {organization}
-              </div>
-            </div>
+            <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-emerald-400 border-2 border-[#181c12] rounded-full" />
           </div>
 
-          {/* Quick Session Badges */}
-          <div className="flex flex-col sm:items-end gap-1.5 text-xs font-mono text-zinc-400 w-full sm:w-auto p-3 rounded-lg bg-[#12150c] border border-[#242b18]">
-            <div className="flex items-center gap-2 justify-between sm:justify-end">
-              <span className="text-zinc-500">Session IP:</span>
-              <span className="text-zinc-200">192.168.1.104 (Local Subnet)</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-lg font-bold text-white">{name || "Dennis Mutuku"}</h2>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-[#202716] text-[#ffd600] border-[#344023]">
+                @{username || "admin"}
+              </span>
             </div>
-            <div className="flex items-center gap-2 justify-between sm:justify-end">
-              <span className="text-zinc-500">Active Node:</span>
-              <span className="text-[#ffd600]">openboy-control-edge-01</span>
-            </div>
-            <div className="flex items-center gap-2 justify-between sm:justify-end">
-              <span className="text-zinc-500">2FA Status:</span>
-              <span className="text-emerald-400 font-bold">Hardware & App Enabled</span>
-            </div>
+            <p className="text-xs text-zinc-400 font-mono">{email || "dennis@openboy.dev"}</p>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Profile Form + Password Change Form */}
+      {/* Main Grid: Account Info + Password Change Form */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* CARD 1: Operator Details Edit Form */}
+        {/* CARD 1: Account Information */}
         <div className="p-5 sm:p-6 rounded-xl bg-[#181c12] border border-[#273019] shadow-lg flex flex-col justify-between">
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="pb-3 border-b border-[#242b18]">
-              <h3 className="text-sm font-bold text-white">Operator Information</h3>
+              <h3 className="text-sm font-bold text-white">Account Details</h3>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Primary contact and operational routing info for system triage.
+                Update your display name and email address.
               </p>
             </div>
 
             {profileSaved && (
               <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 text-xs font-mono flex items-center gap-2 animate-fade-in">
                 <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Profile information saved and synced across cluster.</span>
+                <span>Account details saved successfully.</span>
               </div>
             )}
 
@@ -279,30 +228,18 @@ export default function ProfilePage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-zinc-300 mb-1 block">Username</label>
-                  <input
-                    type="text"
-                    value={username}
-                    readOnly
-                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#0e1109] border border-[#222816] text-xs text-zinc-400 font-mono cursor-not-allowed"
-                    title="Usernames are managed via system administrator"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-zinc-300 mb-1 block">Role</label>
-                  <input
-                    type="text"
-                    value={role}
-                    readOnly
-                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#0e1109] border border-[#222816] text-xs text-zinc-400 font-mono cursor-not-allowed"
-                  />
-                </div>
+              <div>
+                <label className="text-xs font-semibold text-zinc-300 mb-1 block">Username</label>
+                <input
+                  type="text"
+                  value={username}
+                  readOnly
+                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#0e1109] border border-[#222816] text-xs text-zinc-400 font-mono cursor-not-allowed"
+                />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-300 mb-1 block">Work Email</label>
+                <label className="text-xs font-semibold text-zinc-300 mb-1 block">Email Address</label>
                 <input
                   type="email"
                   value={email}
@@ -312,71 +249,30 @@ export default function ProfilePage() {
                   required
                 />
               </div>
-
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 mb-1 block">Organization / Unit</label>
-                <input
-                  type="text"
-                  value={organization}
-                  onChange={(e) => setOrganization(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#12150c] border border-[#273019] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] transition-colors"
-                  placeholder="OpenBoy Infrastructure"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-zinc-300 mb-1 block">Timezone</label>
-                  <select
-                    value={timezone}
-                    onChange={(e) => setTimezone(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-lg bg-[#12150c] border border-[#273019] text-xs text-white focus:outline-none focus:border-[#ffd600] cursor-pointer"
-                  >
-                    <option value="UTC+03:00 (Nairobi, East Africa)">UTC+03:00 (Nairobi)</option>
-                    <option value="UTC+00:00 (London, UTC)">UTC+00:00 (London, UTC)</option>
-                    <option value="UTC-05:00 (New York, EST)">UTC-05:00 (New York, EST)</option>
-                    <option value="UTC-08:00 (San Francisco, PST)">UTC-08:00 (San Francisco, PST)</option>
-                    <option value="UTC+01:00 (Frankfurt, CET)">UTC+01:00 (Frankfurt, CET)</option>
-                    <option value="UTC+08:00 (Singapore, SGT)">UTC+08:00 (Singapore, SGT)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-zinc-300 mb-1 block">Pager Phone</label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#12150c] border border-[#273019] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] transition-colors font-mono"
-                    placeholder="+254 700 000 000"
-                  />
-                </div>
-              </div>
             </div>
 
-            {/* Save Button: full-width on mobile running left to right */}
             <div className="pt-3">
               <button
                 type="submit"
                 disabled={isSavingProfile}
                 className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs transition-all shadow-md active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
               >
-                <span>Save Profile Changes</span>
+                <span>Save Changes</span>
               </button>
             </div>
           </form>
         </div>
 
-        {/* CARD 2: Change Password Form (Strictly following Clean UI & Design Protocols) */}
+        {/* CARD 2: Change Password Form */}
         <div className="p-5 sm:p-6 rounded-xl bg-[#181c12] border border-[#273019] shadow-lg flex flex-col justify-between">
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div className="pb-3 border-b border-[#242b18]">
               <h3 className="text-sm font-bold text-white">Change Password</h3>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Update your login credentials. Requires strong entropy and min 8 characters.
+                Update your login password. Minimum 8 characters.
               </p>
             </div>
 
-            {/* Error Feedback */}
             {passwordError && (
               <div className="p-3 rounded-lg bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-mono flex items-center gap-2 animate-fade-in">
                 <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
@@ -384,7 +280,6 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Success Feedback */}
             {passwordSuccess && (
               <div className="p-3 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center gap-2 animate-fade-in">
                 <Check className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -393,7 +288,6 @@ export default function ProfilePage() {
             )}
 
             <div className="space-y-3">
-              {/* Current Password */}
               <div>
                 <label className="text-xs font-semibold text-zinc-300 mb-1 block">Current Password</label>
                 <div className="relative">
@@ -416,7 +310,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* New Password */}
               <div>
                 <label className="text-xs font-semibold text-zinc-300 mb-1 block">New Password</label>
                 <div className="relative">
@@ -438,7 +331,6 @@ export default function ProfilePage() {
                   </button>
                 </div>
 
-                {/* Password Strength Meter */}
                 {newPassword && (
                   <div className="mt-2 space-y-1.5">
                     <div className="flex items-center justify-between text-[11px] font-mono">
@@ -454,7 +346,6 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* Confirm Password */}
               <div>
                 <label className="text-xs font-semibold text-zinc-300 mb-1 block">Confirm New Password</label>
                 <div className="relative">
@@ -477,7 +368,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Security Guidance Checklist */}
               <div className="p-3 rounded-lg bg-[#12150c] border border-[#242b18] text-[11px] font-mono space-y-1 text-zinc-400">
                 <div className="flex items-center gap-1.5">
                   <span className={newPassword.length >= 8 ? "text-emerald-400" : "text-zinc-600"}>
@@ -500,7 +390,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Change Password Button: full-width on mobile running left to right */}
             <div className="pt-3">
               <button
                 type="submit"
@@ -514,17 +403,17 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* CARD 3: Cryptographic Developer Token & API Access */}
+      {/* CARD 3: API Token */}
       <div className="p-5 sm:p-6 rounded-xl bg-[#181c12] border border-[#273019] shadow-lg space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#242b18]">
           <div>
-            <h3 className="text-sm font-bold text-white">Production API & MCP Gateway Token</h3>
+            <h3 className="text-sm font-bold text-white">API Token</h3>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Bearer token for programmatic heartbeat snitching, CLI cron registration, and MCP server synchronization.
+              Secret token for programmatic cron pinging and API authentication.
             </p>
           </div>
           <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded border bg-[#1a1f12] text-zinc-300 border-[#2f3920] self-start sm:self-auto">
-            Scopes: cron:write, metrics:read
+            Active
           </span>
         </div>
 
