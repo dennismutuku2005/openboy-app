@@ -28,6 +28,33 @@ import MethodBadge from "@/components/MethodBadge";
 import EmptyState from "@/components/EmptyState";
 import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
 
+function formatLogTime(timestamp, formattedTime) {
+  if (formattedTime) return formattedTime;
+  if (!timestamp) return "Just now";
+  try {
+    const d = new Date(timestamp);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+    return String(timestamp);
+  } catch {
+    return String(timestamp);
+  }
+}
+
+function formatLogDate(timestamp) {
+  if (!timestamp) return "";
+  try {
+    const d = new Date(timestamp);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString([], { month: "short", day: "numeric" });
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 function ExecutionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -66,7 +93,7 @@ function ExecutionsContent() {
     return monitors.find((m) => m.id === monitorParam) || null;
   }, [monitorParam, monitors]);
 
-  // Filter logs based on schedule, status filter, and search query
+  // Filter logs based strictly on real monitor dispatches, status filter, and search query
   const filteredLogs = useMemo(() => {
     let result = [...logs];
 
@@ -75,34 +102,6 @@ function ExecutionsContent() {
       result = result.filter(
         (l) => l.monitorId === selectedSchedule.id || l.url === selectedSchedule.url
       );
-
-      // If synthetic schedule history needed
-      if (result.length < 12) {
-        const synthetic = Array.from({ length: 18 }).map((_, index) => {
-          const pastDate = new Date(Date.now() - (index + 1) * 30000);
-          const isError = selectedSchedule.status === "failing" && index < 2;
-          const status = isError ? 503 : 200;
-          const statusText = isError ? "Service Unavailable" : "OK";
-          const latency = isError ? 2450 : 25 + ((index * 7) % 45);
-
-          return {
-            id: `syn-${selectedSchedule.id}-${index}`,
-            monitorId: selectedSchedule.id,
-            monitorName: selectedSchedule.name,
-            url: selectedSchedule.url,
-            method: selectedSchedule.method || "GET",
-            status,
-            statusText,
-            latency,
-            timestamp: pastDate.toLocaleTimeString(),
-            ok: !isError,
-            error: isError ? "Upstream service timeout (503 Gateway Timeout)" : null,
-            isSynthetic: true,
-          };
-        });
-
-        result = [...result, ...synthetic];
-      }
     }
 
     // Apply success/error filter
@@ -182,34 +181,35 @@ function ExecutionsContent() {
     );
   }
 
-  // Stats calculation
+  // Real Stats calculation based strictly on real logs & monitor data
   const totalRuns = selectedSchedule
-    ? (selectedSchedule.totalPings || 1420) + filteredLogs.filter((l) => !l.isSynthetic).length
+    ? (typeof selectedSchedule.totalPings === "number" && selectedSchedule.totalPings > 0
+        ? selectedSchedule.totalPings
+        : filteredLogs.length)
     : logs.length;
 
-  const successCount = selectedSchedule
-    ? filteredLogs.filter((l) => l.ok).length
-    : logs.filter((l) => l.ok).length;
-
+  const successCount = filteredLogs.filter((l) => l.ok).length;
   const errorCount = selectedSchedule
-    ? selectedSchedule.failedPings || (selectedSchedule.status === "failing" ? 4 : 0)
-    : logs.filter((l) => !l.ok).length;
+    ? (typeof selectedSchedule.failedPings === "number"
+        ? selectedSchedule.failedPings
+        : filteredLogs.filter((l) => !l.ok).length)
+    : filteredLogs.filter((l) => !l.ok).length;
 
   const successRate = selectedSchedule
-    ? selectedSchedule.uptime || (errorCount > 0 ? "99.85%" : "100%")
+    ? selectedSchedule.uptime || (totalRuns > 0 ? `${(((totalRuns - errorCount) / totalRuns) * 100).toFixed(1)}%` : "100%")
     : totalRuns > 0
-    ? `${((successCount / totalRuns) * 100).toFixed(1)}%`
+    ? `${(((totalRuns - errorCount) / totalRuns) * 100).toFixed(1)}%`
     : "100%";
 
   const avgLatency =
     filteredLogs.length > 0
       ? Math.round(filteredLogs.reduce((acc, curr) => acc + (curr.latency || 0), 0) / filteredLogs.length)
-      : selectedSchedule?.lastLatency || 28;
+      : selectedSchedule?.lastLatency || 0;
 
   const filterTabs = [
     { id: "all", label: "All Runs", count: filteredLogs.length },
-    { id: "success", label: "Success (200)", count: filteredLogs.filter((l) => l.ok).length },
-    { id: "errors", label: "Errors (5xx/4xx)", count: filteredLogs.filter((l) => !l.ok).length },
+    { id: "success", label: "Success (200)", count: successCount },
+    { id: "errors", label: "Errors (5xx/4xx)", count: errorCount },
   ];
 
   return (
@@ -289,20 +289,32 @@ function ExecutionsContent() {
             {/* Execution History Bar */}
             <div className="space-y-1.5 pt-2 border-t border-openboy-border">
               <div className="flex items-center justify-between text-[11px] font-mono text-openboy-text-muted">
-                <span>Recent Run Timeline (Last 24 dispatches)</span>
+                <span>Recent Run Timeline ({filteredLogs.length} total recorded)</span>
                 <span className="text-emerald-500 dark:text-emerald-400 font-semibold">{successRate} SLA</span>
               </div>
               <div className="flex items-center gap-1 h-5">
                 {Array.from({ length: 24 }).map((_, i) => {
-                  const isErrorTick = selectedSchedule.status === "failing" && (i === 22 || i === 23);
+                  const emptyCount = Math.max(0, 24 - filteredLogs.length);
+                  if (i < emptyCount) {
+                    return (
+                      <div
+                        key={i}
+                        title="Awaiting next scheduled dispatch"
+                        className="flex-1 h-full rounded-2xs bg-openboy-surface-subtle border border-openboy-border/40"
+                      />
+                    );
+                  }
+                  const logIndex = i - emptyCount;
+                  const logItem = filteredLogs[filteredLogs.length - 1 - logIndex];
+                  const isOk = logItem ? logItem.ok : true;
                   return (
                     <div
                       key={i}
-                      title={`Run #${24 - i}: ${isErrorTick ? "503 Error (Incident)" : "200 OK"}`}
+                      title={logItem ? `Run: ${logItem.status} (${logItem.latency}ms) at ${formatLogTime(logItem.timestamp, logItem.formattedTime)}` : "Dispatched"}
                       className={`flex-1 h-full rounded-2xs transition-opacity hover:opacity-100 ${
-                        isErrorTick
-                          ? "bg-rose-500 opacity-90"
-                          : "bg-emerald-500/85 hover:bg-emerald-400 opacity-80"
+                        isOk
+                          ? "bg-emerald-500/85 hover:bg-emerald-400 opacity-80"
+                          : "bg-rose-500 opacity-90"
                       }`}
                     />
                   );
@@ -421,8 +433,13 @@ function ExecutionsContent() {
                     <td className="py-3.5 px-4 font-mono font-bold text-openboy-text-main">
                       {log.latency}ms
                     </td>
-                    <td className="py-3.5 px-4 text-openboy-text-muted whitespace-nowrap font-mono">
-                      {log.timestamp}
+                    <td className="py-3.5 px-4 text-openboy-text-muted whitespace-nowrap font-mono text-xs">
+                      <div className="text-openboy-text-main font-semibold">
+                        {formatLogTime(log.timestamp, log.formattedTime)}
+                      </div>
+                      <div className="text-[10px] text-openboy-text-dim">
+                        {formatLogDate(log.timestamp)}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4">
                       {log.error ? (
@@ -522,7 +539,7 @@ function ExecutionsContent() {
               <div className="p-3 rounded-xl bg-openboy-surface-subtle border border-openboy-border space-y-1">
                 <span className="text-[11px] text-openboy-text-muted font-medium">Timestamp</span>
                 <div className="text-xs font-mono text-openboy-text-main font-bold truncate">
-                  {selectedLog.timestamp}
+                  {formatLogTime(selectedLog.timestamp, selectedLog.formattedTime)} ({formatLogDate(selectedLog.timestamp)})
                 </div>
               </div>
 
