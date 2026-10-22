@@ -15,7 +15,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
-import { scheduleTemplates } from "@/lib/monitorsData";
 import { DashboardPageSkeleton } from "@/components/DashboardSkeletons";
 import SearchInput from "@/components/SearchInput";
 import FilterTabs from "@/components/FilterTabs";
@@ -24,6 +23,49 @@ import IntervalBadge from "@/components/IntervalBadge";
 import MethodBadge from "@/components/MethodBadge";
 import EmptyState from "@/components/EmptyState";
 import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
+
+const scheduleTemplates = [
+  {
+    id: "tpl-1",
+    title: "High-frequency Health Ping (Every 10s)",
+    description: "Ping critical microservices at the minimum 10-second interval to catch outages instantly.",
+    interval: "10s",
+    intervalSeconds: 10,
+    intervalLabel: "10s",
+    method: "GET",
+    defaultUrl: "https://api.example.com/health",
+  },
+  {
+    id: "tpl-2",
+    title: "Standard Monitor (Every 30 seconds)",
+    description: "The recommended standard heartbeat interval for APIs, webhooks, and SaaS services.",
+    interval: "30s",
+    intervalSeconds: 30,
+    intervalLabel: "30s",
+    method: "GET",
+    defaultUrl: "https://api.example.com/status",
+  },
+  {
+    id: "tpl-3",
+    title: "Background Batcher Trigger (Every 10 minutes)",
+    description: "Trigger scheduled data pipelines, queue consumers, and sync jobs every 10 minutes.",
+    interval: "10m",
+    intervalSeconds: 600,
+    intervalLabel: "10m",
+    method: "POST",
+    defaultUrl: "https://api.example.com/jobs/batch-process",
+  },
+  {
+    id: "tpl-4",
+    title: "Nightly Maintenance: Run at 23:30, every day",
+    description: "Schedule daily backups, cleanup scripts, and aggregation tasks late at night.",
+    interval: "custom",
+    intervalSeconds: 86400,
+    intervalLabel: "Daily 23:30",
+    method: "POST",
+    defaultUrl: "https://api.example.com/cron/nightly-backup",
+  },
+];
 
 export default function DashboardMainPage() {
   const router = useRouter();
