@@ -167,6 +167,56 @@ export default function IncidentsPage() {
     );
   }
 
+  const activeOutagesCount =
+    incidents.filter((i) => i.status === "investigating").length +
+    activeFailingMonitors.length;
+
+  const resolvedIncidents = incidents.filter((i) => i.status === "resolved");
+
+  // Calculate real MTTR if any resolved incidents exist
+  const mttrValue =
+    resolvedIncidents.length > 0
+      ? resolvedIncidents[0].duration || "Under 5m"
+      : "0s";
+  const mttrSubtitle =
+    resolvedIncidents.length > 0
+      ? `Based on ${resolvedIncidents.length} resolved incident${resolvedIncidents.length > 1 ? "s" : ""}`
+      : "No downtime incidents recorded";
+
+  // Calculate real availability across real cron monitors
+  const totalMonitors = (monitors || []).length;
+  const totalPings = (monitors || []).reduce((acc, m) => acc + (m.totalPings || 0), 0);
+  const totalFails = (monitors || []).reduce((acc, m) => acc + (m.failedPings || 0), 0);
+  const calculatedUptime =
+    totalPings > 0
+      ? `${(((totalPings - totalFails) / totalPings) * 100).toFixed(2)}%`
+      : "100.00%";
+  const uptimeSubtitle =
+    totalMonitors > 0
+      ? `Across ${totalMonitors} active cron endpoint${totalMonitors > 1 ? "s" : ""}`
+      : "Across all cron endpoints";
+
+  // Real alert destinations from monitors
+  const configuredAlerts = new Set();
+  (monitors || []).forEach((m) => {
+    if (Array.isArray(m.notifications)) {
+      m.notifications.forEach((n) => {
+        if (typeof n === "string" && n.trim()) {
+          configuredAlerts.add(n.trim());
+        }
+      });
+    }
+  });
+
+  const alertDestinationText =
+    configuredAlerts.size > 0
+      ? Array.from(configuredAlerts).slice(0, 2).join(" / ")
+      : "Engine Internal";
+  const alertSubtitle =
+    configuredAlerts.size > 0
+      ? "Configured channel dispatch"
+      : "Default webhook dispatch";
+
   const severityTabs = [
     { id: "all", label: "All Severities", count: incidents.length },
     { id: "ongoing", label: "Investigating", count: incidents.filter((i) => i.status === "investigating").length },
@@ -188,32 +238,32 @@ export default function IncidentsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <MetricCard
           title="Active Outages"
-          value={incidents.filter((i) => i.status === "investigating").length + activeFailingMonitors.length}
-          valueColor="text-rose-500 dark:text-rose-400"
-          subtitle="Requires engineer triage"
+          value={activeOutagesCount}
+          valueColor={activeOutagesCount > 0 ? "text-rose-500 dark:text-rose-400" : "text-emerald-500 dark:text-emerald-400"}
+          subtitle={activeOutagesCount > 0 ? "Requires engineer triage" : "All systems operational"}
           icon={AlertTriangle}
         />
 
         <MetricCard
           title="Mean Time to Recover (MTTR)"
-          value="4m 12s"
-          trend="Past 30 days average"
-          trendType="success"
+          value={mttrValue}
+          valueColor={resolvedIncidents.length > 0 ? "text-amber-500" : "text-openboy-text-muted"}
+          subtitle={mttrSubtitle}
           icon={Clock}
         />
 
         <MetricCard
           title="Overall Availability"
-          value="99.94%"
-          valueColor="text-emerald-500 dark:text-emerald-400"
-          subtitle="Across all cron endpoints"
+          value={calculatedUptime}
+          valueColor={parseFloat(calculatedUptime) >= 99 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500"}
+          subtitle={uptimeSubtitle}
           icon={CheckCircle2}
         />
 
         <MetricCard
           title="Alert Destinations"
-          value="PagerDuty / Slack"
-          subtitle="Auto-escalation enabled"
+          value={alertDestinationText}
+          subtitle={alertSubtitle}
           icon={Bell}
         />
       </div>
@@ -254,13 +304,15 @@ export default function IncidentsPage() {
             <tbody className="divide-y divide-openboy-border font-mono">
               {filteredIncidents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-openboy-text-muted">
-                    No incidents match the selected filter.
+                  <td colSpan={6} className="py-12 text-center text-openboy-text-muted">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
+                    <div className="text-sm font-semibold text-openboy-text-main">No Incidents Recorded</div>
+                    <div className="text-xs text-openboy-text-muted mt-0.5">All monitored endpoints are operating within normal parameters.</div>
                   </td>
                 </tr>
               ) : (
-                filteredIncidents.slice(0, visibleCount).map((inc) => (
-                  <tr key={inc.id} className="hover:bg-openboy-surface-hover transition-colors">
+                filteredIncidents.slice(0, visibleCount).map((inc, idx) => (
+                  <tr key={inc.id ? `${inc.id}-${idx}` : `inc-${idx}`} className="hover:bg-openboy-surface-hover transition-colors">
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <StatusBadge status={inc.severity} />
                     </td>

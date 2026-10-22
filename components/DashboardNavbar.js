@@ -36,7 +36,7 @@ export default function DashboardNavbar() {
   };
 
   return (
-    <header className="w-full bg-openboy-surface/95 backdrop-blur-md border-b border-openboy-border px-2.5 sm:px-3.5 md:px-4 py-3 sm:py-3.5 min-h-[56px] sm:min-h-[64px] flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-0 z-20 transition-all">
+    <header className="w-full bg-openboy-surface/95 backdrop-blur-md border-b border-openboy-border px-4 sm:px-5 md:px-6 py-3 sm:py-3.5 min-h-[56px] sm:min-h-[64px] flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-0 z-20 transition-all">
       {/* Mobile Top Row: Standalone sidebar toggle, Breadcrumb, Theme Toggle & Profile Avatar */}
       <div className="flex md:hidden items-center justify-between w-full">
         <button
