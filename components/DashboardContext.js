@@ -17,17 +17,7 @@ export function DashboardProvider({ children }) {
   const [modalInitialData, setModalInitialData] = useState(null);
   const [logs, setLogs] = useState([]);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [currentUser, setCurrentUser] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("openboy_user");
-        return cached ? JSON.parse(cached) : null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
+  const [currentUser, setCurrentUser] = useState(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   // Custom modal dialogs (no browser alert/confirm!)
@@ -38,6 +28,14 @@ export function DashboardProvider({ children }) {
   // 1. Authenticate with JWT & Load real data directly from Go API service
   useEffect(() => {
     let isMounted = true;
+
+    // Load cached session safely on client mount (prevents SSR hydration mismatch)
+    try {
+      const cached = localStorage.getItem("openboy_user");
+      if (cached && isMounted) {
+        setCurrentUser(JSON.parse(cached));
+      }
+    } catch {}
 
     async function initializeSession() {
       // Must have valid session

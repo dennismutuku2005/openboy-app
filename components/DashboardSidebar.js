@@ -225,14 +225,14 @@ export default function DashboardSidebar() {
             className="flex items-center gap-3 p-1.5 -m-1.5 rounded-lg hover:bg-openboy-surface-hover transition-colors cursor-pointer group"
             title="Manage Operator Profile & Security"
           >
-            <div className="w-9 h-9 rounded-full bg-openboy-surface border border-openboy-border group-hover:border-[#ffd600] flex items-center justify-center font-bold text-sm text-[#ffd600] transition-colors shadow-2xs">
+            <div suppressHydrationWarning className="w-9 h-9 rounded-full bg-openboy-surface border border-openboy-border group-hover:border-[#ffd600] flex items-center justify-center font-bold text-sm text-[#ffd600] transition-colors shadow-2xs">
               {(currentUser?.name || currentUser?.username || "A").slice(0, 1).toUpperCase()}
             </div>
             <div className="overflow-hidden flex-1">
-              <div className="text-xs font-semibold text-openboy-text-main truncate group-hover:text-[#ffd600] transition-colors">
+              <div suppressHydrationWarning className="text-xs font-semibold text-openboy-text-main truncate group-hover:text-[#ffd600] transition-colors">
                 {currentUser?.name || currentUser?.username || "admin"}
               </div>
-              <div className="text-xs text-openboy-text-muted truncate">
+              <div suppressHydrationWarning className="text-xs text-openboy-text-muted truncate">
                 {currentUser?.email || "Account"}
               </div>
             </div>

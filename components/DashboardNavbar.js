@@ -66,7 +66,7 @@ export default function DashboardNavbar() {
             title="Open Profile & Account Security"
           >
             <div className="relative">
-              <div className="w-8 h-8 rounded-full bg-openboy-surface-subtle border border-[#ffd600]/40 group-hover:border-[#ffd600] group-hover:scale-105 flex items-center justify-center font-bold text-xs text-[#ffd600] transition-all shadow-xs">
+              <div suppressHydrationWarning className="w-8 h-8 rounded-full bg-openboy-surface-subtle border border-[#ffd600]/40 group-hover:border-[#ffd600] group-hover:scale-105 flex items-center justify-center font-bold text-xs text-[#ffd600] transition-all shadow-xs">
                 {userInitial}
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border-2 border-openboy-surface rounded-full" />
@@ -97,7 +97,7 @@ export default function DashboardNavbar() {
 
           {/* Live Clock */}
           {utcTime && (
-            <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-openboy-surface-subtle border border-openboy-border text-xs font-mono text-openboy-text-muted">
+            <div suppressHydrationWarning className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-openboy-surface-subtle border border-openboy-border text-xs font-mono text-openboy-text-muted">
               <Clock className="w-3.5 h-3.5 text-openboy-text-dim" />
               <span>{utcTime}</span>
             </div>
@@ -140,7 +140,7 @@ export default function DashboardNavbar() {
             title="Operator Profile & Security"
           >
             <div className="relative">
-              <div className="w-8 h-8 rounded-full bg-openboy-surface-subtle border border-[#ffd600]/40 group-hover:border-[#ffd600] group-hover:scale-105 flex items-center justify-center font-bold text-xs text-[#ffd600] transition-all shadow-xs">
+              <div suppressHydrationWarning className="w-8 h-8 rounded-full bg-openboy-surface-subtle border border-[#ffd600]/40 group-hover:border-[#ffd600] group-hover:scale-105 flex items-center justify-center font-bold text-xs text-[#ffd600] transition-all shadow-xs">
                 {userInitial}
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border-2 border-openboy-surface rounded-full" />
