@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, ChevronDown, ChevronUp, Bell, Check, Globe, Loader2 } from "lucide-react";
+import { X, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useDashboard } from "./DashboardContext";
 
 export default function CreateMonitorModal() {
@@ -129,28 +129,28 @@ export default function CreateMonitorModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg bg-[#1a1e12] border border-[#2b331f] rounded-xl shadow-2xl overflow-hidden text-[#f5f6f0]">
-        {/* Header matching Image 3 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2b331f]/60">
-          <h2 className="text-base font-semibold text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-lg bg-openboy-surface border border-openboy-border rounded-xl shadow-2xl overflow-hidden text-openboy-text-main transition-colors">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-openboy-border">
+          <h2 className="text-base font-semibold text-openboy-text-main">
             Create monitor
           </h2>
           <button
             type="button"
             onClick={closeCreateModal}
-            className="text-zinc-400 hover:text-white p-1 rounded-md hover:bg-[#252b1a] transition-colors cursor-pointer"
+            className="text-openboy-text-muted hover:text-openboy-text-main p-1 rounded-md hover:bg-openboy-surface-hover transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Form Body matching Image 3 */}
+        {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
           {/* URL Input */}
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-              URL <span className="text-amber-400">*</span>
+            <label className="block text-xs font-medium text-openboy-text-main mb-1.5">
+              URL <span className="text-amber-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -159,17 +159,17 @@ export default function CreateMonitorModal() {
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://api.example.com/health"
                 required
-                className="w-full px-3.5 py-2.5 text-sm bg-[#242918] text-white border border-[#353d26] rounded-md focus:outline-none focus:border-[#ffd600] focus:ring-1 focus:ring-[#ffd600] transition-colors placeholder:text-zinc-500"
+                className="w-full px-3.5 py-2.5 text-sm bg-openboy-surface-subtle text-openboy-text-main border border-openboy-border rounded-md focus:outline-none focus:border-[#ffd600] focus:ring-1 focus:ring-[#ffd600] transition-colors placeholder:text-openboy-text-dim"
               />
             </div>
-            <p className="text-[11px] text-zinc-500 mt-1">
+            <p className="text-[11px] text-openboy-text-muted mt-1">
               The endpoint OpenBoy will ping or trigger as a cron job.
             </p>
           </div>
 
           {/* Name Input */}
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            <label className="block text-xs font-medium text-openboy-text-main mb-1.5">
               Name (optional)
             </label>
             <input
@@ -177,53 +177,53 @@ export default function CreateMonitorModal() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Production API Ping or Billing Webhook"
-              className="w-full px-3.5 py-2.5 text-sm bg-[#242918] text-white border border-[#353d26] rounded-md focus:outline-none focus:border-[#ffd600] focus:ring-1 focus:ring-[#ffd600] transition-colors placeholder:text-zinc-500"
+              className="w-full px-3.5 py-2.5 text-sm bg-openboy-surface-subtle text-openboy-text-main border border-openboy-border rounded-md focus:outline-none focus:border-[#ffd600] focus:ring-1 focus:ring-[#ffd600] transition-colors placeholder:text-openboy-text-dim"
             />
           </div>
 
-          {/* Interval Select matching image 3 + User requirements */}
+          {/* Interval Select */}
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            <label className="block text-xs font-medium text-openboy-text-main mb-1.5">
               Interval
             </label>
             <div className="relative">
               <select
                 value={interval}
                 onChange={(e) => setInterval(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm bg-[#242918] text-white border border-[#353d26] rounded-md focus:outline-none focus:border-[#ffd600] focus:ring-1 focus:ring-[#ffd600] transition-colors appearance-none cursor-pointer pr-10"
+                className="w-full px-3.5 py-2.5 text-sm bg-openboy-surface-subtle text-openboy-text-main border border-openboy-border rounded-md focus:outline-none focus:border-[#ffd600] focus:ring-1 focus:ring-[#ffd600] transition-colors appearance-none cursor-pointer pr-10"
               >
-                <option value="10s" className="bg-[#1a1e12] text-white">
+                <option value="10s">
                   Every 10 seconds (Minimum interval)
                 </option>
-                <option value="30s" className="bg-[#1a1e12] text-white">
+                <option value="30s">
                   Every 30 seconds (Standard default)
                 </option>
-                <option value="1m" className="bg-[#1a1e12] text-white">
+                <option value="1m">
                   Every 1 minute
                 </option>
-                <option value="5m" className="bg-[#1a1e12] text-white">
+                <option value="5m">
                   Every 5 minutes
                 </option>
-                <option value="10m" className="bg-[#1a1e12] text-white">
+                <option value="10m">
                   Every 10 minutes (Batcher standard)
                 </option>
-                <option value="30m" className="bg-[#1a1e12] text-white">
+                <option value="30m">
                   Every 30 minutes
                 </option>
-                <option value="1h" className="bg-[#1a1e12] text-white">
+                <option value="1h">
                   Every 1 hour
                 </option>
-                <option value="24h" className="bg-[#1a1e12] text-white">
+                <option value="24h">
                   Every 24 hours
                 </option>
-                <option value="custom_seconds" className="bg-[#1a1e12] text-white">
+                <option value="custom_seconds">
                   Custom interval in seconds (Min 10s)
                 </option>
-                <option value="cron" className="bg-[#1a1e12] text-white">
+                <option value="cron">
                   Custom cron expression
                 </option>
               </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-zinc-400">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-openboy-text-muted">
                 <ChevronDown className="w-4 h-4" />
               </div>
             </div>
@@ -231,8 +231,8 @@ export default function CreateMonitorModal() {
 
           {/* Conditional Custom Interval Input */}
           {interval === "custom_seconds" && (
-            <div className="p-3 bg-[#242918] border border-[#353d26] rounded-md animate-fade-in">
-              <label className="block text-xs font-medium text-zinc-300 mb-1">
+            <div className="p-3 bg-openboy-surface-subtle border border-openboy-border rounded-md animate-fade-in">
+              <label className="block text-xs font-medium text-openboy-text-main mb-1">
                 Interval in Seconds (Least 10 seconds):
               </label>
               <div className="flex items-center gap-2">
@@ -242,16 +242,16 @@ export default function CreateMonitorModal() {
                   max="86400"
                   value={customSeconds}
                   onChange={(e) => setCustomSeconds(Math.max(10, parseInt(e.target.value) || 10))}
-                  className="w-32 px-3 py-1.5 text-sm bg-[#1a1e12] text-white border border-[#3e482b] rounded focus:outline-none focus:border-[#ffd600]"
+                  className="w-32 px-3 py-1.5 text-sm bg-openboy-surface text-openboy-text-main border border-openboy-border rounded focus:outline-none focus:border-[#ffd600]"
                 />
-                <span className="text-xs text-zinc-400">seconds (e.g. 15s, 45s)</span>
+                <span className="text-xs text-openboy-text-muted">seconds (e.g. 15s, 45s)</span>
               </div>
             </div>
           )}
 
           {interval === "cron" && (
-            <div className="p-3 bg-[#242918] border border-[#353d26] rounded-md animate-fade-in">
-              <label className="block text-xs font-medium text-zinc-300 mb-1">
+            <div className="p-3 bg-openboy-surface-subtle border border-openboy-border rounded-md animate-fade-in">
+              <label className="block text-xs font-medium text-openboy-text-main mb-1">
                 Cron Expression (Standard 5-fields):
               </label>
               <input
@@ -259,9 +259,9 @@ export default function CreateMonitorModal() {
                 value={cronExpression}
                 onChange={(e) => setCronExpression(e.target.value)}
                 placeholder="*/10 * * * *"
-                className="w-full px-3 py-1.5 text-sm bg-[#1a1e12] text-white border border-[#3e482b] rounded focus:outline-none focus:border-[#ffd600] font-mono"
+                className="w-full px-3 py-1.5 text-sm bg-openboy-surface text-openboy-text-main border border-openboy-border rounded focus:outline-none focus:border-[#ffd600] font-mono"
               />
-              <span className="text-[11px] text-zinc-400 mt-1 block">
+              <span className="text-[11px] text-openboy-text-muted mt-1 block">
                 Example: &quot;*/10 * * * *&quot; (every 10 mins), &quot;0 23 * * *&quot; (daily at 23:00)
               </span>
             </div>
@@ -269,10 +269,10 @@ export default function CreateMonitorModal() {
 
           {/* Notifications Section */}
           <div>
-            <span className="block text-xs font-semibold text-zinc-300 mb-2">
+            <span className="block text-xs font-semibold text-openboy-text-main mb-2">
               Notifications
             </span>
-            <div className="space-y-2 bg-[#202516] p-3.5 rounded-md border border-[#2e3620]">
+            <div className="space-y-2 bg-openboy-surface-subtle p-3.5 rounded-md border border-openboy-border">
               {/* Option 1: Use my defaults */}
               <label className="flex items-center gap-3 cursor-pointer group">
                 <div className="relative flex items-center justify-center">
@@ -287,7 +287,7 @@ export default function CreateMonitorModal() {
                     className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                       notifications === "defaults"
                         ? "border-[#ffd600] bg-[#ffd600]"
-                        : "border-zinc-500 bg-transparent group-hover:border-zinc-400"
+                        : "border-openboy-border-light bg-transparent group-hover:border-openboy-text-muted"
                     }`}
                   >
                     {notifications === "defaults" && (
@@ -296,10 +296,10 @@ export default function CreateMonitorModal() {
                   </div>
                 </div>
                 <div>
-                  <span className="text-xs font-medium text-white block">
+                  <span className="text-xs font-medium text-openboy-text-main block">
                     Use my defaults
                   </span>
-                  <span className="text-[11px] text-zinc-400 block">Email</span>
+                  <span className="text-[11px] text-openboy-text-muted block">Email</span>
                 </div>
               </label>
 
@@ -317,7 +317,7 @@ export default function CreateMonitorModal() {
                     className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                       notifications === "channels"
                         ? "border-[#ffd600] bg-[#ffd600]"
-                        : "border-zinc-500 bg-transparent group-hover:border-zinc-400"
+                        : "border-openboy-border-light bg-transparent group-hover:border-openboy-text-muted"
                     }`}
                   >
                     {notifications === "channels" && (
@@ -326,10 +326,10 @@ export default function CreateMonitorModal() {
                   </div>
                 </div>
                 <div>
-                  <span className="text-xs font-medium text-white block">
+                  <span className="text-xs font-medium text-openboy-text-main block">
                     Choose channels
                   </span>
-                  <span className="text-[11px] text-zinc-400 block">
+                  <span className="text-[11px] text-openboy-text-muted block">
                     Slack, Webhook, Discord, Telegram
                   </span>
                 </div>
@@ -349,7 +349,7 @@ export default function CreateMonitorModal() {
                     className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                       notifications === "off"
                         ? "border-[#ffd600] bg-[#ffd600]"
-                        : "border-zinc-500 bg-transparent group-hover:border-zinc-400"
+                        : "border-openboy-border-light bg-transparent group-hover:border-openboy-text-muted"
                     }`}
                   >
                     {notifications === "off" && (
@@ -357,38 +357,38 @@ export default function CreateMonitorModal() {
                     )}
                   </div>
                 </div>
-                <span className="text-xs font-medium text-white">Off</span>
+                <span className="text-xs font-medium text-openboy-text-main">Off</span>
               </label>
             </div>
           </div>
 
-          {/* Advanced Accordion matching Image 3 */}
-          <div className="border border-[#2b331f] rounded-md overflow-hidden">
+          {/* Advanced Accordion */}
+          <div className="border border-openboy-border rounded-md overflow-hidden">
             <button
               type="button"
               onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 bg-[#202516] text-xs font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between px-3.5 py-2.5 bg-openboy-surface-subtle text-xs font-medium text-openboy-text-main hover:bg-openboy-surface-hover transition-colors cursor-pointer"
             >
               <span>Advanced HTTP Options</span>
               {isAdvancedOpen ? (
-                <ChevronUp className="w-4 h-4 text-zinc-400" />
+                <ChevronUp className="w-4 h-4 text-openboy-text-muted" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-zinc-400" />
+                <ChevronDown className="w-4 h-4 text-openboy-text-muted" />
               )}
             </button>
 
             {isAdvancedOpen && (
-              <div className="p-3.5 bg-[#1b1f13] space-y-3 border-t border-[#2b331f]">
+              <div className="p-3.5 bg-openboy-surface space-y-3 border-t border-openboy-border">
                 {/* Method */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">
+                    <label className="block text-[11px] text-openboy-text-muted mb-1">
                       Method
                     </label>
                     <select
                       value={method}
                       onChange={(e) => setMethod(e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-xs bg-[#242918] text-white border border-[#353d26] rounded focus:outline-none focus:border-[#ffd600]"
+                      className="w-full px-2.5 py-1.5 text-xs bg-openboy-surface-subtle text-openboy-text-main border border-openboy-border rounded focus:outline-none focus:border-[#ffd600]"
                     >
                       <option value="GET">GET</option>
                       <option value="POST">POST</option>
@@ -399,7 +399,7 @@ export default function CreateMonitorModal() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">
+                    <label className="block text-[11px] text-openboy-text-muted mb-1">
                       Expected Status Code
                     </label>
                     <input
@@ -407,14 +407,14 @@ export default function CreateMonitorModal() {
                       value={expectedStatus}
                       onChange={(e) => setExpectedStatus(e.target.value)}
                       placeholder="200"
-                      className="w-full px-2.5 py-1.5 text-xs bg-[#242918] text-white border border-[#353d26] rounded focus:outline-none focus:border-[#ffd600]"
+                      className="w-full px-2.5 py-1.5 text-xs bg-openboy-surface-subtle text-openboy-text-main border border-openboy-border rounded focus:outline-none focus:border-[#ffd600]"
                     />
                   </div>
                 </div>
 
                 {/* Headers */}
                 <div>
-                  <label className="block text-[11px] text-zinc-400 mb-1">
+                  <label className="block text-[11px] text-openboy-text-muted mb-1">
                     Headers (JSON or format Key: Value)
                   </label>
                   <textarea
@@ -422,14 +422,14 @@ export default function CreateMonitorModal() {
                     value={headers}
                     onChange={(e) => setHeaders(e.target.value)}
                     placeholder='{"Authorization": "Bearer token"}'
-                    className="w-full px-2.5 py-1.5 text-xs bg-[#242918] text-white border border-[#353d26] rounded focus:outline-none focus:border-[#ffd600] font-mono resize-none"
+                    className="w-full px-2.5 py-1.5 text-xs bg-openboy-surface-subtle text-openboy-text-main border border-openboy-border rounded focus:outline-none focus:border-[#ffd600] font-mono resize-none"
                   />
                 </div>
 
                 {/* Body if POST/PUT */}
                 {["POST", "PUT", "PATCH"].includes(method) && (
                   <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">
+                    <label className="block text-[11px] text-openboy-text-muted mb-1">
                       Request Body / Payload
                     </label>
                     <textarea
@@ -437,7 +437,7 @@ export default function CreateMonitorModal() {
                       value={body}
                       onChange={(e) => setBody(e.target.value)}
                       placeholder='{"action": "cron_batch", "limit": 100}'
-                      className="w-full px-2.5 py-1.5 text-xs bg-[#242918] text-white border border-[#353d26] rounded focus:outline-none focus:border-[#ffd600] font-mono resize-none"
+                      className="w-full px-2.5 py-1.5 text-xs bg-openboy-surface-subtle text-openboy-text-main border border-openboy-border rounded focus:outline-none focus:border-[#ffd600] font-mono resize-none"
                     />
                   </div>
                 )}
@@ -450,7 +450,7 @@ export default function CreateMonitorModal() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 px-4 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-sm rounded-lg transition-all shadow hover:shadow-md cursor-pointer active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full py-3 px-4 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin text-black" />

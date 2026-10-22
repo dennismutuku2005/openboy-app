@@ -21,7 +21,7 @@ export default function RootRedirectPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen w-full bg-[#14170e] flex flex-col items-center justify-center text-white">
+    <div className="min-h-screen w-full bg-openboy-bg flex flex-col items-center justify-center text-openboy-text-main">
       <div className="animate-pulse">
         <Image
           src="/logos/logo.png"

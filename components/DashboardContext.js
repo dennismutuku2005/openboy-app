@@ -3,11 +3,13 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { initialMonitors } from "@/lib/monitorsData";
+import { useTheme } from "./ThemeProvider";
 
 const DashboardContext = createContext(null);
 
 export function DashboardProvider({ children }) {
   const router = useRouter();
+  const { theme, toggleTheme, setTheme, isDark } = useTheme();
   const [monitors, setMonitors] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialData, setModalInitialData] = useState(null);
@@ -300,6 +302,10 @@ export function DashboardProvider({ children }) {
         triggerPing,
         updateProfile,
         updatePassword,
+        theme,
+        toggleTheme,
+        setTheme,
+        isDark,
       }}
     >
       {children}

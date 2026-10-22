@@ -20,6 +20,12 @@ import {
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { TableSkeletonRows, MetricCardsSkeleton } from "@/components/DashboardSkeletons";
+import PageHeader from "@/components/PageHeader";
+import MetricCard from "@/components/MetricCard";
+import SearchInput from "@/components/SearchInput";
+import FilterTabs from "@/components/FilterTabs";
+import StatusBadge from "@/components/StatusBadge";
+import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
 
 const initialIncidents = [
   {
@@ -125,88 +131,10 @@ const initialIncidents = [
     dispatchedTo: ["PagerDuty (Core Infra)", "Slack #critical"],
     resolvedAt: "28 days ago at 08:14 UTC",
   },
-  {
-    id: "inc-93",
-    title: "Vault Token Lease Expiration Lockout",
-    service: "Vault Secrets Auto-Rotation Prober",
-    url: "https://vault.internal/v1/sys/health",
-    severity: "P1 - Critical",
-    status: "resolved",
-    startedAt: "30 days ago",
-    duration: "5m 12s",
-    cause: "AppRole token renewal daemon encountered rate limit.",
-    dispatchedTo: ["PagerDuty (Security)"],
-    resolvedAt: "30 days ago at 19:33 UTC",
-  },
-  {
-    id: "inc-92",
-    title: "Segment Buffer Ingestion Backpressure",
-    service: "Segment Telemetry Buffer Flush",
-    url: "https://analytics.internal/buffer/flush",
-    severity: "P3 - Moderate",
-    status: "resolved",
-    startedAt: "34 days ago",
-    duration: "14m 20s",
-    cause: "Downstream API rate limiting incoming batch bursts.",
-    dispatchedTo: ["Slack #ops-alarms"],
-    resolvedAt: "34 days ago at 13:00 UTC",
-  },
-  {
-    id: "inc-91",
-    title: "Cloudflare Edge SSL Handshake Mismatch",
-    service: "Cloudflare DNS Record Health Verifier",
-    url: "https://dns-check.internal/verify/apex",
-    severity: "P2 - High",
-    status: "resolved",
-    startedAt: "38 days ago",
-    duration: "7m 15s",
-    cause: "Origin CA certificate expiration before auto-renewal completed.",
-    dispatchedTo: ["PagerDuty (DevOps)"],
-    resolvedAt: "38 days ago at 04:50 UTC",
-  },
-  {
-    id: "inc-90",
-    title: "Twilio Outbound SMS Gateway 429 Throttle",
-    service: "Twilio SMS Fallback Gateway",
-    url: "https://sms-gateway.openboy.dev/health",
-    severity: "P3 - Moderate",
-    status: "resolved",
-    startedAt: "42 days ago",
-    duration: "9m 02s",
-    cause: "Exceeded short-code TPS limit during OTP authentication wave.",
-    dispatchedTo: ["Slack #ops-alarms"],
-    resolvedAt: "42 days ago at 17:10 UTC",
-  },
-  {
-    id: "inc-89",
-    title: "Kubernetes Kubelet Node Disk Pressure",
-    service: "Kubernetes Node Health Heartbeat",
-    url: "https://k8s-apiserver.internal/livez",
-    severity: "P2 - High",
-    status: "resolved",
-    startedAt: "45 days ago",
-    duration: "11m 30s",
-    cause: "Docker root directory unpruned images filled ephemeral storage.",
-    dispatchedTo: ["PagerDuty (DevOps)"],
-    resolvedAt: "45 days ago at 02:45 UTC",
-  },
-  {
-    id: "inc-88",
-    title: "PostgreSQL Replica Read-Only Query Timeout",
-    service: "PostgreSQL Replica Lag Monitor",
-    url: "https://db-monitor.internal/pg-replica-status",
-    severity: "P3 - Moderate",
-    status: "resolved",
-    startedAt: "48 days ago",
-    duration: "16m 00s",
-    cause: "Long-running analytics report blocked vacuum process.",
-    dispatchedTo: ["Slack #ops-alarms"],
-    resolvedAt: "48 days ago at 06:12 UTC",
-  },
 ];
 
 export default function IncidentsPage() {
-  const { monitors, logs, triggerPing, isLoadingAuth } = useDashboard();
+  const { monitors, triggerPing, isLoadingAuth } = useDashboard();
   const [incidents, setIncidents] = useState(initialIncidents);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("all");
@@ -234,7 +162,7 @@ export default function IncidentsPage() {
     return true;
   });
 
-  // Infinite load: 12 per batch (Automatic on scroll)
+  // Infinite load: 12 per batch
   const [visibleCount, setVisibleCount] = useState(12);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loadSentinelRef = useRef(null);
@@ -256,10 +184,10 @@ export default function IncidentsPage() {
           setTimeout(() => {
             setVisibleCount((prev) => prev + 12);
             setIsLoadingMore(false);
-          }, 350);
+          }, 120);
         }
       },
-      { rootMargin: "300px" }
+      { rootMargin: "150px" }
     );
 
     const sentinel = loadSentinelRef.current;
@@ -310,330 +238,268 @@ export default function IncidentsPage() {
   if (isLoadingAuth) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-64 bg-[#28321b] rounded animate-pulse"></div>
+        <div className="h-8 w-64 bg-openboy-border-light rounded animate-pulse"></div>
         <MetricCardsSkeleton count={4} />
-        <div className="h-64 bg-[#181c12] rounded-xl border border-[#273019] animate-pulse"></div>
+        <div className="h-64 bg-openboy-surface rounded-xl border border-openboy-border animate-pulse"></div>
       </div>
     );
   }
 
+  const severityTabs = [
+    { id: "all", label: "All Severities", count: incidents.length },
+    { id: "ongoing", label: "Investigating", count: incidents.filter((i) => i.status === "investigating").length },
+    { id: "p1", label: "P1 - Critical", count: incidents.filter((i) => i.severity.includes("P1")).length },
+    { id: "p2", label: "P2 - High", count: incidents.filter((i) => i.severity.includes("P2")).length },
+    { id: "p3", label: "P3 - Moderate", count: incidents.filter((i) => i.severity.includes("P3")).length },
+    { id: "resolved", label: "Resolved", count: incidents.filter((i) => i.status === "resolved").length },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header (No icon next to title) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#242b18]">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            Incidents & Downtime Alarms
-          </h1>
-          <p className="text-xs text-zinc-400 mt-1">
-            Normalized production table of downtime alarms, MTTR telemetry, and root-cause post-mortems.
-          </p>
-        </div>
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header */}
+      <PageHeader
+        title="Incidents & Downtime Alarms"
+        subtitle="Normalized production table of downtime alarms, MTTR telemetry, and root-cause post-mortems."
+      />
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#191d11] border border-[#273019] text-xs font-mono text-zinc-400">
-            <span>Escalation Engine: Active</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Metrics Row (Phone responsive 2x2 grid) */}
+      {/* Metrics Row using Shareable MetricCard */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 rounded-xl bg-[#181c12] border border-[#273019]">
-          <div className="text-xs text-zinc-400 mb-1 flex items-center justify-between">
-            <span>Active Incidents</span>
-            <AlertTriangle className="w-4 h-4 text-rose-400" />
-          </div>
-          <div className="text-2xl font-bold text-rose-400 font-mono">
-            {incidents.filter((i) => i.status === "investigating").length + activeFailingMonitors.length}
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Requires engineer triage</div>
-        </div>
+        <MetricCard
+          title="Active Outages"
+          value={incidents.filter((i) => i.status === "investigating").length + activeFailingMonitors.length}
+          valueColor="text-rose-500 dark:text-rose-400"
+          subtitle="Requires engineer triage"
+          icon={AlertTriangle}
+        />
 
-        <div className="p-4 rounded-xl bg-[#181c12] border border-[#273019]">
-          <div className="text-xs text-zinc-400 mb-1 flex items-center justify-between">
-            <span>Mean Time to Recover (MTTR)</span>
-            <Clock className="w-4 h-4 text-[#ffd600]" />
-          </div>
-          <div className="text-2xl font-bold text-white font-mono">4m 12s</div>
-          <div className="text-[11px] text-emerald-400 mt-1">Past 30 days average</div>
-        </div>
+        <MetricCard
+          title="Mean Time to Recover (MTTR)"
+          value="4m 12s"
+          trend="Past 30 days average"
+          trendType="success"
+          icon={Clock}
+        />
 
-        <div className="p-4 rounded-xl bg-[#181c12] border border-[#273019]">
-          <div className="text-xs text-zinc-400 mb-1 flex items-center justify-between">
-            <span>Overall Availability</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl font-bold text-emerald-400 font-mono">99.94%</div>
-          <div className="text-[11px] text-zinc-500 mt-1">Across all cron endpoints</div>
-        </div>
+        <MetricCard
+          title="Overall Availability"
+          value="99.94%"
+          valueColor="text-emerald-500 dark:text-emerald-400"
+          subtitle="Across all cron endpoints"
+          icon={CheckCircle2}
+        />
 
-        <div className="p-4 rounded-xl bg-[#181c12] border border-[#273019]">
-          <div className="text-xs text-zinc-400 mb-1 flex items-center justify-between">
-            <span>Alert Destinations</span>
-            <Bell className="w-4 h-4 text-zinc-500" />
-          </div>
-          <div className="text-2xl font-bold text-white font-mono">PagerDuty / Slack</div>
-          <div className="text-[11px] text-zinc-500 mt-1">Auto-escalation enabled</div>
-        </div>
+        <MetricCard
+          title="Alert Destinations"
+          value="PagerDuty / Slack"
+          subtitle="Auto-escalation enabled"
+          icon={Bell}
+        />
       </div>
-
-      {/* Active Outage Warning if failing monitors exist */}
-      {activeFailingMonitors.length > 0 && (
-        <div className="p-4 rounded-xl bg-rose-950/20 border border-rose-500/40 space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <AlertTriangle className="w-5 h-5 text-rose-400" />
-              <div>
-                <h3 className="text-sm font-bold text-white">Active Outages Detected in Scheduler</h3>
-                <p className="text-xs text-zinc-400">{activeFailingMonitors.length} monitor endpoints are currently failing health checks.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-            {activeFailingMonitors.map((mon) => (
-              <div key={mon.id} className="p-3 bg-black/40 border border-rose-900/40 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
-                <div className="min-w-0">
-                  <div className="text-white font-bold">{mon.name}</div>
-                  <div className="text-rose-400 text-[11px] truncate">{mon.url} (Code: {mon.lastStatus || 503})</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => runDiagnostics(mon.id)}
-                  className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded bg-[#ffd600] hover:bg-[#ffe55b] text-black font-bold text-xs shrink-0 cursor-pointer text-center transition-colors"
-                >
-                  Diagnose
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Filter Row & Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#242b18] pb-3">
-        <div className="w-full sm:w-auto">
-          <label className="text-[11px] text-zinc-400 font-mono mb-1 block sm:hidden">Filter Severity</label>
-          <select
-            value={filterSeverity}
-            onChange={(e) => setFilterSeverity(e.target.value)}
-            className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white focus:outline-none focus:border-[#ffd600]"
-          >
-            <option value="all">All Severities</option>
-            <option value="p1">P1 - Critical</option>
-            <option value="p2">P2 - High</option>
-            <option value="p3">P3 - Moderate</option>
-          </select>
-        </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-openboy-border pb-3">
+        <FilterTabs
+          tabs={severityTabs}
+          activeTab={filterSeverity}
+          onChange={(tabId) => {
+            setFilterSeverity(tabId);
+            setVisibleCount(12);
+          }}
+        />
 
-        <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input
-            type="text"
-            placeholder="Search incident records..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 pr-3 py-2 sm:py-1.5 rounded-lg bg-[#181c12] border border-[#28321b] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] w-full"
-          />
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search incident records..."
+          containerClassName="w-full md:w-64"
+        />
       </div>
 
-      {/* NORMALIZED HIGH-DENSITY INCIDENTS TABLE WITH INFINITE SCROLL */}
-      <div className="rounded-xl border border-[#273019] bg-[#181c12] overflow-hidden shadow-lg">
+      {/* High-Density Incidents Table */}
+      <div className="rounded-xl border border-openboy-border bg-openboy-surface overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px] text-left border-collapse text-xs">
-            <thead className="bg-[#12150c] text-zinc-400 font-mono border-b border-[#242b18]">
+            <thead className="bg-openboy-surface-subtle text-openboy-text-muted font-mono border-b border-openboy-border">
               <tr>
-                <th className="py-3 px-4 font-semibold">Severity</th>
-                <th className="py-3 px-4 font-semibold">Status</th>
-                <th className="py-3 px-4 font-semibold">Incident / Affected Service</th>
-                <th className="py-3 px-4 font-semibold">Root Cause Trace</th>
-                <th className="py-3 px-4 font-semibold">Started</th>
-                <th className="py-3 px-4 font-semibold">Duration</th>
-                <th className="py-3 px-4 font-semibold">Notified</th>
-                <th className="py-3 px-4 text-right font-semibold">Actions</th>
+                <th className="py-3 px-4 font-semibold w-[120px]">Severity</th>
+                <th className="py-3 px-4 font-semibold w-[110px]">Status</th>
+                <th className="py-3 px-4 font-semibold min-w-[200px]">Incident / Affected Service</th>
+                <th className="py-3 px-4 font-semibold w-[140px]">Duration / Started</th>
+                <th className="py-3 px-4 font-semibold min-w-[220px]">Root Cause Trace</th>
+                <th className="py-3 px-4 text-right font-semibold w-[90px]">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#202615]">
-              {filteredIncidents.slice(0, visibleCount).map((inc) => {
-                const isOngoing = inc.status === "investigating";
-
-                return (
-                  <tr
-                    key={inc.id}
-                    className="hover:bg-[#1f2516] transition-colors group"
-                  >
-                    {/* Severity Badge */}
+            <tbody className="divide-y divide-openboy-border font-mono">
+              {filteredIncidents.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-openboy-text-muted">
+                    No incidents match the selected filter.
+                  </td>
+                </tr>
+              ) : (
+                filteredIncidents.slice(0, visibleCount).map((inc) => (
+                  <tr key={inc.id} className="hover:bg-openboy-surface-hover transition-colors">
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span
-                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border inline-block ${
-                          inc.severity.includes("P1")
-                            ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
-                            : inc.severity.includes("P2")
-                            ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                            : "bg-blue-500/20 text-blue-300 border-blue-500/40"
-                        }`}
-                      >
-                        {inc.severity.split(" - ")[0]}
-                      </span>
+                      <StatusBadge status={inc.severity} />
                     </td>
 
-                    {/* Status Badge (Zero dots, clean rectangular tag) */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span
-                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border inline-block ${
-                          isOngoing
-                            ? "bg-rose-500/20 text-rose-300 border-rose-500/30"
-                            : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        }`}
-                      >
-                        {isOngoing ? "Ongoing" : "Resolved"}
-                      </span>
+                      <StatusBadge status={inc.status} />
                     </td>
 
-                    {/* Incident Title & Service */}
-                    <td className="py-3.5 px-4 max-w-sm">
-                      <div className="font-semibold text-white truncate group-hover:text-[#ffd600] transition-colors">
-                        {inc.title}
-                      </div>
-                      <div className="text-[11px] text-zinc-400 font-mono truncate mt-0.5">
-                        {inc.service}
-                      </div>
+                    <td className="py-3.5 px-4 font-sans max-w-xs">
+                      <div className="font-semibold text-openboy-text-main line-clamp-1">{inc.title}</div>
+                      <div className="text-[11px] text-openboy-text-muted font-mono truncate">{inc.service}</div>
                     </td>
 
-                    {/* Root Cause */}
-                    <td className="py-3.5 px-4 max-w-xs text-zinc-300 font-mono text-[11px] truncate">
-                      {inc.cause}
+                    <td className="py-3.5 px-4 whitespace-nowrap text-openboy-text-muted">
+                      <div>{inc.duration}</div>
+                      <div className="text-[10px] text-openboy-text-dim">{inc.startedAt}</div>
                     </td>
 
-                    {/* Started */}
-                    <td className="py-3.5 px-4 whitespace-nowrap font-mono text-zinc-400">
-                      {inc.startedAt}
+                    <td className="py-3.5 px-4 font-sans max-w-sm text-openboy-text-muted">
+                      <div className="line-clamp-2 text-[11px] leading-relaxed">{inc.cause}</div>
                     </td>
 
-                    {/* Duration */}
-                    <td className="py-3.5 px-4 whitespace-nowrap font-mono text-white font-bold">
-                      {inc.duration}
-                    </td>
-
-                    {/* Notified */}
-                    <td className="py-3.5 px-4 whitespace-nowrap font-mono text-zinc-400 text-[10px]">
-                      {inc.dispatchedTo.map((d) => d.split(" ")[0]).join(", ")}
-                    </td>
-
-                    {/* Action Buttons with Spinners */}
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
-                        {isOngoing && (
+                        {inc.status === "investigating" ? (
                           <button
                             type="button"
                             onClick={() => promptResolve(inc)}
-                            className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1 rounded bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-sans font-semibold cursor-pointer transition-colors"
                           >
-                            <Check className="w-3 h-3 stroke-[3]" />
-                            <span>Resolve</span>
+                            Resolve
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => promptDelete(inc)}
+                            className="p-1.5 text-openboy-text-muted hover:text-rose-500 hover:bg-openboy-surface-subtle rounded cursor-pointer transition-colors"
+                            title="Delete incident entry"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
-
-                        <button
-                          type="button"
-                          onClick={() => promptDelete(inc)}
-                          className="p-1.5 rounded-md bg-[#212716] hover:bg-rose-950/40 text-zinc-400 hover:text-rose-300 border border-[#2e371f] transition-colors cursor-pointer"
-                          title="Delete Incident Record"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     </td>
                   </tr>
-                );
-              })}
-
-              {/* Skeletons while loading more */}
-              {isLoadingMore && (
-                <TableSkeletonRows
-                  rows={Math.min(12, Math.max(1, filteredIncidents.length - visibleCount))}
-                />
+                ))
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Invisible sentinel for automatic infinite scroll */}
-        {hasMore && <div ref={loadSentinelRef} className="h-4 w-full pointer-events-none" />}
+        {/* Shareable Infinite Scroll Sentinel */}
+        <InfiniteScrollSentinel
+          sentinelRef={loadSentinelRef}
+          hasMore={hasMore}
+          isLoadingMore={isLoadingMore}
+        />
       </div>
 
-      {/* Mark Resolved Modal */}
-      {resolveModal.isOpen && (
+      {/* Resolve Incident Modal Dialog */}
+      {resolveModal.isOpen && resolveModal.incident && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#181c12] border border-emerald-500/40 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-emerald-400">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+          <div className="w-full max-w-md bg-openboy-surface border border-openboy-border rounded-2xl shadow-2xl overflow-hidden p-6 text-openboy-text-main space-y-5 transition-colors">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shrink-0">
+                  <Check className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-openboy-text-main">Mark Incident as Resolved</h3>
+                  <p className="text-xs text-openboy-text-muted mt-0.5">Post-mortem will be timestamped.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">Resolve Incident</h3>
-                <p className="text-xs text-zinc-400">{resolveModal.incident?.service}</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-zinc-300 leading-relaxed">
-              Confirm that the root cause has been addressed and all automated health checks are passing. This will log the resolution timestamp and notify on-call engineers.
-            </p>
-
-            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setResolveModal({ isOpen: false, incident: null })}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
+                className="p-1 rounded-md text-openboy-text-muted hover:text-openboy-text-main hover:bg-openboy-surface-subtle transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 bg-openboy-surface-subtle border border-openboy-border rounded-xl space-y-1 font-mono text-xs">
+              <div className="font-semibold text-openboy-text-main truncate">
+                {resolveModal.incident.title}
+              </div>
+              <div className="text-openboy-text-muted truncate text-[11px]">
+                {resolveModal.incident.service}
+              </div>
+            </div>
+
+            <p className="text-xs text-openboy-text-muted leading-relaxed">
+              Confirming resolution will archive this active outage, calculate the final MTTR downtime duration, and notify on-call escalation channels.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setResolveModal({ isOpen: false, incident: null })}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main border border-openboy-border transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmResolve}
-                className="w-full sm:w-auto px-5 py-2.5 sm:py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors"
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-[#ffd600] hover:bg-[#eed000] text-black transition-all shadow-md cursor-pointer"
               >
-                Confirm Resolution
+                Confirm Resolved
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Incident Modal */}
-      {deleteModal.isOpen && (
+      {/* Delete Incident Modal Dialog */}
+      {deleteModal.isOpen && deleteModal.incident && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#181c12] border border-rose-500/40 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-rose-400">
-              <div className="p-2 rounded-lg bg-rose-500/10">
-                <AlertTriangle className="w-5 h-5 text-rose-400" />
+          <div className="w-full max-w-md bg-openboy-surface border border-openboy-border rounded-2xl shadow-2xl overflow-hidden p-6 text-openboy-text-main space-y-5 transition-colors">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-500 shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-openboy-text-main">Delete Incident Record</h3>
+                  <p className="text-xs text-openboy-text-muted mt-0.5">This action cannot be undone.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">Delete Incident Record</h3>
-                <p className="text-xs text-zinc-400">{deleteModal.incident?.title}</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-zinc-300 leading-relaxed">
-              Are you sure you want to delete this incident post-mortem? This action cannot be undone.
-            </p>
-
-            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setDeleteModal({ isOpen: false, incident: null })}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg border border-[#2b351e] bg-[#14170e] text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
+                className="p-1 rounded-md text-openboy-text-muted hover:text-openboy-text-main hover:bg-openboy-surface-subtle transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 bg-openboy-surface-subtle border border-openboy-border rounded-xl space-y-1 font-mono text-xs">
+              <div className="font-semibold text-openboy-text-main truncate">
+                {deleteModal.incident.title}
+              </div>
+              <div className="text-openboy-text-muted truncate text-[11px]">
+                {deleteModal.incident.service}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteModal({ isOpen: false, incident: null })}
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main border border-openboy-border transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="w-full sm:w-auto px-5 py-2.5 sm:py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors"
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md cursor-pointer"
               >
-                Confirm Delete
+                Delete Record
               </button>
             </div>
           </div>

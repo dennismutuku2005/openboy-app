@@ -2,16 +2,21 @@
 
 import { useState, useEffect } from "react";
 import {
-  KeyRound,
   Eye,
   EyeOff,
   Check,
   Copy,
   AlertTriangle,
   RotateCw,
+  User,
+  Lock,
+  KeyRound,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { MetricCardsSkeleton } from "@/components/DashboardSkeletons";
+import PageHeader from "@/components/PageHeader";
+import StatusBadge from "@/components/StatusBadge";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/Card";
 
 export default function ProfilePage() {
   const { currentUser, updateProfile, updatePassword, isLoadingAuth } = useDashboard();
@@ -61,9 +66,9 @@ export default function ProfilePage() {
     if (/[0-9]/.test(pwd)) score += 1;
     if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
 
-    if (score <= 2) return { score, label: "Weak", color: "bg-rose-500", text: "text-rose-400" };
-    if (score <= 4) return { score, label: "Good", color: "bg-amber-400", text: "text-amber-300" };
-    return { score, label: "Strong", color: "bg-emerald-400", text: "text-emerald-300" };
+    if (score <= 2) return { score, label: "Weak", color: "bg-rose-500", text: "text-rose-500" };
+    if (score <= 4) return { score, label: "Good", color: "bg-amber-400", text: "text-amber-500" };
+    return { score, label: "Strong", color: "bg-emerald-500", text: "text-emerald-500" };
   };
 
   const strength = getPasswordStrength(newPassword);
@@ -147,303 +152,290 @@ export default function ProfilePage() {
   if (isLoadingAuth) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-64 bg-[#28321b] rounded animate-pulse"></div>
+        <div className="h-8 w-64 bg-openboy-border-light rounded animate-pulse"></div>
         <MetricCardsSkeleton count={3} />
-        <div className="h-64 bg-[#181c12] rounded-xl border border-[#273019] animate-pulse"></div>
+        <div className="h-64 bg-openboy-surface rounded-xl border border-openboy-border animate-pulse"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header (No icon next to title) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#242b18]">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            Account & Security
-          </h1>
-          <p className="text-xs text-zinc-400 mt-1">
-            Manage your account identity, password, and API token.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
-            Active
-          </span>
-        </div>
-      </div>
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header */}
+      <PageHeader
+        title="Account & Security"
+        subtitle="Manage your operator profile, password credentials, and API access token."
+      />
 
       {/* Profile Overview Card with Circular Avatar */}
-      <div className="p-5 sm:p-6 rounded-xl bg-[#181c12] border border-[#273019] shadow-lg">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#232a17] border-2 border-[#ffd600]/60 flex items-center justify-center font-bold text-2xl sm:text-3xl text-[#ffd600] shadow-xl">
-              {userInitial}
+      <Card>
+        <CardContent className="p-5 sm:p-6">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-openboy-surface-subtle border-2 border-[#ffd600]/80 flex items-center justify-center font-bold text-2xl sm:text-3xl text-[#ffd600] shadow-md">
+                {userInitial}
+              </div>
+              <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-emerald-500 border-2 border-openboy-surface rounded-full" />
             </div>
-            <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-emerald-400 border-2 border-[#181c12] rounded-full" />
-          </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-bold text-white">{name || "Dennis Mutuku"}</h2>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-[#202716] text-[#ffd600] border-[#344023]">
-                @{username || "admin"}
-              </span>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-bold text-openboy-text-main">{name || "Dennis Mutuku"}</h2>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-openboy-surface-subtle text-[#ffd600] border-openboy-border">
+                  @{username || "admin"}
+                </span>
+              </div>
+              <p className="text-xs text-openboy-text-muted font-mono">{email || "dennis@openboy.dev"}</p>
             </div>
-            <p className="text-xs text-zinc-400 font-mono">{email || "dennis@openboy.dev"}</p>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Main Grid: Account Info + Password Change Form */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* CARD 1: Account Information */}
-        <div className="p-5 sm:p-6 rounded-xl bg-[#181c12] border border-[#273019] shadow-lg flex flex-col justify-between">
-          <form onSubmit={handleSaveProfile} className="space-y-4">
-            <div className="pb-3 border-b border-[#242b18]">
-              <h3 className="text-sm font-bold text-white">Account Details</h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Update your display name and email address.
-              </p>
-            </div>
+        <Card className="flex flex-col justify-between">
+          <div>
+            <CardHeader>
+              <CardTitle>
+                <User className="w-4 h-4 text-[#ffd600]" />
+                <span>Account Details</span>
+              </CardTitle>
+              <CardDescription>
+                Update your operator display name and alert email.
+              </CardDescription>
+            </CardHeader>
 
-            {profileSaved && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 text-xs font-mono flex items-center gap-2 animate-fade-in">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Account details saved successfully.</span>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 mb-1 block">Full Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#12150c] border border-[#273019] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] transition-colors"
-                  placeholder="e.g. Dennis Mutuku"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 mb-1 block">Username</label>
-                <input
-                  type="text"
-                  value={username}
-                  readOnly
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#0e1109] border border-[#222816] text-xs text-zinc-400 font-mono cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 mb-1 block">Email Address</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg bg-[#12150c] border border-[#273019] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] transition-colors"
-                  placeholder="dennis@openboy.dev"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="pt-3">
-              <button
-                type="submit"
-                disabled={isSavingProfile}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs transition-all shadow-md active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
-              >
-                <span>Save Changes</span>
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* CARD 2: Change Password Form */}
-        <div className="p-5 sm:p-6 rounded-xl bg-[#181c12] border border-[#273019] shadow-lg flex flex-col justify-between">
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div className="pb-3 border-b border-[#242b18]">
-              <h3 className="text-sm font-bold text-white">Change Password</h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Update your login password. Minimum 8 characters.
-              </p>
-            </div>
-
-            {passwordError && (
-              <div className="p-3 rounded-lg bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-mono flex items-center gap-2 animate-fade-in">
-                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                <span>{passwordError}</span>
-              </div>
-            )}
-
-            {passwordSuccess && (
-              <div className="p-3 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center gap-2 animate-fade-in">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{passwordSuccess}</span>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 mb-1 block">Current Password</label>
-                <div className="relative">
-                  <input
-                    type={showCurrentPass ? "text" : "password"}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full pl-3.5 pr-10 py-2.5 rounded-lg bg-[#12150c] border border-[#273019] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] transition-colors font-mono"
-                    placeholder="Enter current password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPass(!showCurrentPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200 cursor-pointer p-1"
-                    aria-label={showCurrentPass ? "Hide password" : "Show password"}
-                  >
-                    {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 mb-1 block">New Password</label>
-                <div className="relative">
-                  <input
-                    type={showNewPass ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full pl-3.5 pr-10 py-2.5 rounded-lg bg-[#12150c] border border-[#273019] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] transition-colors font-mono"
-                    placeholder="Min 8 chars, 1 number, 1 symbol"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPass(!showNewPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200 cursor-pointer p-1"
-                    aria-label={showNewPass ? "Hide password" : "Show password"}
-                  >
-                    {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-
-                {newPassword && (
-                  <div className="mt-2 space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] font-mono">
-                      <span className="text-zinc-400">Strength:</span>
-                      <span className={`font-bold ${strength.text}`}>{strength.label}</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-[#12150c] rounded-full overflow-hidden flex gap-1">
-                      <div className={`h-full flex-1 rounded-full ${strength.score >= 1 ? strength.color : "bg-zinc-800"}`} />
-                      <div className={`h-full flex-1 rounded-full ${strength.score >= 3 ? strength.color : "bg-zinc-800"}`} />
-                      <div className={`h-full flex-1 rounded-full ${strength.score >= 5 ? strength.color : "bg-zinc-800"}`} />
-                    </div>
+            <CardContent>
+              <form onSubmit={handleSaveProfile} className="space-y-4">
+                {profileSaved && (
+                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-xs font-mono flex items-center gap-2 animate-fade-in">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>Account details saved successfully.</span>
                   </div>
                 )}
-              </div>
 
-              <div>
-                <label className="text-xs font-semibold text-zinc-300 mb-1 block">Confirm New Password</label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPass ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-3.5 pr-10 py-2.5 rounded-lg bg-[#12150c] border border-[#273019] text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#ffd600] transition-colors font-mono"
-                    placeholder="Repeat new password"
-                    required
-                  />
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-openboy-text-main mb-1.5 block">Full Name</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-lg bg-openboy-surface-subtle border border-openboy-border text-xs text-openboy-text-main placeholder:text-openboy-text-dim focus:outline-none focus:border-[#ffd600] transition-colors"
+                      placeholder="e.g. Dennis Mutuku"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-openboy-text-main mb-1.5 block">Username</label>
+                    <input
+                      type="text"
+                      value={username}
+                      readOnly
+                      className="w-full px-3.5 py-2.5 rounded-lg bg-openboy-surface-subtle/60 border border-openboy-border text-xs text-openboy-text-muted font-mono cursor-not-allowed opacity-80"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-openboy-text-main mb-1.5 block">Email Address</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-lg bg-openboy-surface-subtle border border-openboy-border text-xs text-openboy-text-main placeholder:text-openboy-text-dim focus:outline-none focus:border-[#ffd600] transition-colors"
+                      placeholder="dennis@openboy.dev"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-3">
                   <button
-                    type="button"
-                    onClick={() => setShowConfirmPass(!showConfirmPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200 cursor-pointer p-1"
-                    aria-label={showConfirmPass ? "Hide password" : "Show password"}
+                    type="submit"
+                    disabled={isSavingProfile}
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs transition-all shadow-md active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
                   >
-                    {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <span>Save Changes</span>
                   </button>
                 </div>
-              </div>
+              </form>
+            </CardContent>
+          </div>
+        </Card>
 
-              <div className="p-3 rounded-lg bg-[#12150c] border border-[#242b18] text-[11px] font-mono space-y-1 text-zinc-400">
-                <div className="flex items-center gap-1.5">
-                  <span className={newPassword.length >= 8 ? "text-emerald-400" : "text-zinc-600"}>
-                    {newPassword.length >= 8 ? "✓" : "○"}
-                  </span>
-                  <span>At least 8 characters length</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className={/[0-9]/.test(newPassword) ? "text-emerald-400" : "text-zinc-600"}>
-                    {/[0-9]/.test(newPassword) ? "✓" : "○"}
-                  </span>
-                  <span>Includes at least one numeric digit</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className={/[^A-Za-z0-9]/.test(newPassword) ? "text-emerald-400" : "text-zinc-600"}>
-                    {/[^A-Za-z0-9]/.test(newPassword) ? "✓" : "○"}
-                  </span>
-                  <span>Includes a special character or symbol</span>
-                </div>
-              </div>
-            </div>
+        {/* CARD 2: Change Password Form */}
+        <Card className="flex flex-col justify-between">
+          <div>
+            <CardHeader>
+              <CardTitle>
+                <Lock className="w-4 h-4 text-[#ffd600]" />
+                <span>Change Password</span>
+              </CardTitle>
+              <CardDescription>
+                Update your login password. Minimum 8 characters.
+              </CardDescription>
+            </CardHeader>
 
-            <div className="pt-3">
-              <button
-                type="submit"
-                disabled={isUpdatingPassword}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs transition-all shadow-md active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
-              >
-                <span>Update Password</span>
-              </button>
-            </div>
-          </form>
-        </div>
+            <CardContent>
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                {passwordError && (
+                  <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs font-mono flex items-center gap-2 animate-fade-in">
+                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                    <span>{passwordError}</span>
+                  </div>
+                )}
+
+                {passwordSuccess && (
+                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-xs font-mono flex items-center gap-2 animate-fade-in">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{passwordSuccess}</span>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-openboy-text-main mb-1.5 block">Current Password</label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPass ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-lg bg-openboy-surface-subtle border border-openboy-border text-xs text-openboy-text-main placeholder:text-openboy-text-dim focus:outline-none focus:border-[#ffd600] transition-colors font-mono"
+                        placeholder="Enter current password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPass(!showCurrentPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-openboy-text-muted hover:text-openboy-text-main cursor-pointer p-1"
+                        aria-label={showCurrentPass ? "Hide password" : "Show password"}
+                      >
+                        {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-openboy-text-main mb-1.5 block">New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showNewPass ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-lg bg-openboy-surface-subtle border border-openboy-border text-xs text-openboy-text-main placeholder:text-openboy-text-dim focus:outline-none focus:border-[#ffd600] transition-colors font-mono"
+                        placeholder="Min 8 chars, 1 number, 1 symbol"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPass(!showNewPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-openboy-text-muted hover:text-openboy-text-main cursor-pointer p-1"
+                        aria-label={showNewPass ? "Hide password" : "Show password"}
+                      >
+                        {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    {newPassword && (
+                      <div className="mt-2 space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px] font-mono">
+                          <span className="text-openboy-text-muted">Strength:</span>
+                          <span className={`font-bold ${strength.text}`}>{strength.label}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-openboy-surface-subtle border border-openboy-border rounded-full overflow-hidden flex gap-1">
+                          <div className={`h-full flex-1 rounded-full ${strength.score >= 1 ? strength.color : "bg-transparent"}`} />
+                          <div className={`h-full flex-1 rounded-full ${strength.score >= 3 ? strength.color : "bg-transparent"}`} />
+                          <div className={`h-full flex-1 rounded-full ${strength.score >= 5 ? strength.color : "bg-transparent"}`} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-openboy-text-main mb-1.5 block">Confirm New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPass ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-lg bg-openboy-surface-subtle border border-openboy-border text-xs text-openboy-text-main placeholder:text-openboy-text-dim focus:outline-none focus:border-[#ffd600] transition-colors font-mono"
+                        placeholder="Repeat new password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-openboy-text-muted hover:text-openboy-text-main cursor-pointer p-1"
+                        aria-label={showConfirmPass ? "Hide password" : "Show password"}
+                      >
+                        {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3">
+                  <button
+                    type="submit"
+                    disabled={isUpdatingPassword}
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs transition-all shadow-md active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    <span>Update Password</span>
+                  </button>
+                </div>
+              </form>
+            </CardContent>
+          </div>
+        </Card>
       </div>
 
       {/* CARD 3: API Token */}
-      <div className="p-5 sm:p-6 rounded-xl bg-[#181c12] border border-[#273019] shadow-lg space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#242b18]">
-          <div>
-            <h3 className="text-sm font-bold text-white">API Token</h3>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Secret token for programmatic cron pinging and API authentication.
-            </p>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle>
+                <KeyRound className="w-4 h-4 text-[#ffd600]" />
+                <span>API Token & Programmatic Key</span>
+              </CardTitle>
+              <CardDescription>
+                Secret token for programmatic cron pinging, automated webhook dispatches, and SDK ingestion.
+              </CardDescription>
+            </div>
+            <StatusBadge status="active" label="Live Key" />
           </div>
-          <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded border bg-[#1a1f12] text-zinc-300 border-[#2f3920] self-start sm:self-auto">
-            Active
-          </span>
-        </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="flex-1 bg-openboy-surface-subtle border border-openboy-border rounded-lg px-3.5 py-2.5 font-mono text-xs text-openboy-text-main flex items-center justify-between overflow-hidden">
+              <span className="truncate">{apiToken}</span>
+              <span className="text-[10px] font-bold text-emerald-500 ml-2 shrink-0">ACTIVE</span>
+            </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="flex-1 bg-[#12150c] border border-[#242b18] rounded-lg px-3.5 py-2.5 font-mono text-xs text-zinc-300 flex items-center justify-between overflow-hidden">
-            <span className="truncate">{apiToken}</span>
-            <span className="text-[10px] font-bold text-emerald-400 ml-2 shrink-0">ACTIVE</span>
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyToken}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-openboy-border bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Copy className="w-3.5 h-3.5 text-[#ffd600]" />
+                <span>{copiedToken ? "Copied!" : "Copy Token"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleRegenerateToken}
+                disabled={isRegeneratingToken}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-300 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <RotateCw className={`w-3.5 h-3.5 text-rose-500 ${isRegeneratingToken ? "animate-spin" : ""}`} />
+                <span>Regenerate</span>
+              </button>
+            </div>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-2">
-            <button
-              type="button"
-              onClick={handleCopyToken}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-[#273019] bg-[#14170e] hover:bg-[#1f2516] text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Copy className="w-3.5 h-3.5 text-[#ffd600]" />
-              <span>{copiedToken ? "Copied!" : "Copy Token"}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleRegenerateToken}
-              disabled={isRegeneratingToken}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-rose-500/30 bg-rose-950/20 hover:bg-rose-950/40 text-rose-300 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <RotateCw className={`w-3.5 h-3.5 text-rose-400 ${isRegeneratingToken ? "animate-spin" : ""}`} />
-              <span>Regenerate</span>
-            </button>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

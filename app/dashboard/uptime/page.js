@@ -3,13 +3,19 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, CheckCircle2, Clock, Search } from "lucide-react";
+import { Activity, Clock, Server, CheckCircle2 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { MetricCardsSkeleton, TableSkeletonRows } from "@/components/DashboardSkeletons";
+import PageHeader from "@/components/PageHeader";
+import MetricCard from "@/components/MetricCard";
+import SearchInput from "@/components/SearchInput";
+import StatusBadge from "@/components/StatusBadge";
+import IntervalBadge from "@/components/IntervalBadge";
+import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
 
 export default function UptimePage() {
   const router = useRouter();
-  const { monitors, logs, triggerPing, isLoadingAuth } = useDashboard();
+  const { monitors, logs, isLoadingAuth } = useDashboard();
   const [search, setSearch] = useState("");
 
   // Infinite load: 12 per batch (Automatic on scroll)
@@ -43,10 +49,10 @@ export default function UptimePage() {
           setTimeout(() => {
             setVisibleCount((prev) => prev + 12);
             setIsLoadingMore(false);
-          }, 350);
+          }, 120);
         }
       },
-      { rootMargin: "350px" }
+      { rootMargin: "150px" }
     );
 
     const sentinel = loadSentinelRef.current;
@@ -61,121 +67,101 @@ export default function UptimePage() {
     return (
       <div className="space-y-6">
         <div className="space-y-2 animate-pulse">
-          <div className="h-7 w-64 bg-[#28321b] rounded"></div>
-          <div className="h-3 w-96 bg-[#1f2615] rounded"></div>
+          <div className="h-7 w-64 bg-openboy-border-light rounded"></div>
+          <div className="h-3 w-96 bg-openboy-surface-hover rounded"></div>
         </div>
         <MetricCardsSkeleton count={4} />
-        <div className="h-64 bg-[#181c12] rounded-xl border border-[#273019] animate-pulse"></div>
+        <div className="h-64 bg-openboy-surface rounded-xl border border-openboy-border animate-pulse"></div>
       </div>
     );
   }
 
+  const activeEndpointsCount = monitors.filter((m) => m.status === "active").length;
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header (No icon next to title) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
-            Uptime & Telemetry Metrics
-          </h1>
-          <p className="text-xs text-zinc-400 mt-1">
-            Availability SLA metrics, response latency trends, and 30-day health distributions.
-          </p>
-        </div>
+      {/* Unified Page Header */}
+      <PageHeader
+        title="Uptime & Telemetry Metrics"
+        subtitle="Availability SLA metrics, response latency trends, and 30-day health distributions."
+      />
 
-        {/* Global SLA Badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1f2615] border border-[#2e3720] text-xs font-mono self-start sm:self-auto">
-          <span className="text-zinc-400">System Status:</span>
-          <span className="text-emerald-400 font-bold">99.98% Operational</span>
-        </div>
-      </div>
-
-      {/* KPI Cards (Phone responsive 2x2 grid) */}
+      {/* KPI Cards (Phone responsive 2x2 grid using shareable MetricCard) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-4 space-y-1">
-          <span className="text-xs text-zinc-400">Total Endpoints</span>
-          <div className="text-2xl font-bold text-white">{monitors.length}</div>
-          <span className="text-[11px] text-emerald-400 flex items-center gap-1">
-            {monitors.filter((m) => m.status === "active").length} active now
-          </span>
-        </div>
+        <MetricCard
+          title="Total Endpoints"
+          value={monitors.length}
+          trend={`${activeEndpointsCount} active now`}
+          trendType="success"
+          icon={Server}
+        />
 
-        <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-4 space-y-1">
-          <span className="text-xs text-zinc-400">Avg. Response Time</span>
-          <div className="text-2xl font-bold text-[#ffd600] font-mono">38ms</div>
-          <span className="text-[11px] text-zinc-400">Past 24-hour average</span>
-        </div>
+        <MetricCard
+          title="Avg. Response Time"
+          value="38ms"
+          valueColor="text-amber-600 dark:text-[#ffd600]"
+          subtitle="Past 24-hour average"
+          icon={Clock}
+        />
 
-        <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-4 space-y-1">
-          <span className="text-xs text-zinc-400">Incident Rate (30d)</span>
-          <div className="text-2xl font-bold text-white font-mono">0.02%</div>
-          <span className="text-[11px] text-emerald-400">High availability</span>
-        </div>
+        <MetricCard
+          title="Incident Rate (30d)"
+          value="0.02%"
+          trend="High availability"
+          trendType="success"
+          icon={Activity}
+        />
 
-        <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl p-4 space-y-1">
-          <span className="text-xs text-zinc-400">Total Pings Handled</span>
-          <div className="text-2xl font-bold text-white font-mono">48,290</div>
-          <span className="text-[11px] text-zinc-400">Automatic cron cycles</span>
-        </div>
+        <MetricCard
+          title="Total Pings Handled"
+          value="48,290"
+          subtitle="Automatic cron cycles"
+          icon={CheckCircle2}
+        />
       </div>
 
-      {/* Search Bar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="text-xs text-zinc-400 font-mono">
-          <span>Monitor Health Breakdown</span>
+      {/* Search Bar Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="text-xs text-openboy-text-muted font-mono">
+          <span>Monitor Health Breakdown ({filtered.length} targets)</span>
         </div>
 
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter endpoint..."
-            className="pl-9 pr-4 py-1.5 bg-[#1b2013] border border-[#2b341f] rounded-lg text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#ffd600] w-64"
-          />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Filter endpoint or URL..."
+          containerClassName="w-full sm:w-72"
+        />
       </div>
 
-      {/* NORMALIZED UPTIME TABLE WITH INFINITE SCROLL */}
-      <div className="bg-[#1b2013] border border-[#2b341f] rounded-xl overflow-hidden shadow-lg">
+      {/* NORMALIZED UPTIME TABLE */}
+      <div className="bg-openboy-surface border border-openboy-border rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[680px] text-left border-collapse text-xs">
-            <thead className="bg-[#212717] text-zinc-300 font-mono text-xs border-b border-[#2b341f]">
+            <thead className="bg-openboy-surface-subtle text-openboy-text-muted font-mono text-xs border-b border-openboy-border">
               <tr>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Monitor / Target</th>
-                <th className="py-3 px-4">Cadence</th>
-                <th className="py-3 px-4">Latency</th>
-                <th className="py-3 px-4 w-72">30-Day Health Bars</th>
-                <th className="py-3 px-4 text-right">Uptime SLA</th>
+                <th className="py-3 px-4 font-semibold w-[120px]">Status</th>
+                <th className="py-3 px-4 font-semibold min-w-[200px]">Monitor / Target</th>
+                <th className="py-3 px-4 font-semibold w-[110px]">Cadence</th>
+                <th className="py-3 px-4 font-semibold w-[90px]">Latency</th>
+                <th className="py-3 px-4 w-72 font-semibold">30-Day Health Bars</th>
+                <th className="py-3 px-4 text-right font-semibold w-[100px]">Uptime SLA</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#252d1b]">
+            <tbody className="divide-y divide-openboy-border">
               {filtered.slice(0, visibleCount).map((mon) => {
-                const isActive = mon.status === "active";
                 const isFailing = mon.status === "failing";
 
                 return (
                   <tr
                     key={mon.id}
                     onClick={() => router.push(`/dashboard/executions?monitor=${mon.id}`)}
-                    className="hover:bg-[#202616] transition-colors cursor-pointer group"
+                    className="hover:bg-openboy-surface-hover transition-colors cursor-pointer group"
                     title="Click to view run history on executions page"
                   >
-                    {/* Status (Zero dots) */}
+                    {/* Status Badge */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span
-                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border inline-block ${
-                          isActive
-                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                            : isFailing
-                            ? "bg-rose-500/20 text-rose-300 border-rose-500/30"
-                            : "bg-[#252c19] text-zinc-400 border-[#384328]"
-                        }`}
-                      >
-                        {isActive ? "Active" : isFailing ? "Failing" : "Paused"}
-                      </span>
+                      <StatusBadge status={mon.status} />
                     </td>
 
                     {/* Monitor Name & URL */}
@@ -183,20 +169,20 @@ export default function UptimePage() {
                       <Link
                         href={`/dashboard/executions?monitor=${mon.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="font-semibold text-white truncate group-hover:text-[#ffd600] transition-colors block"
+                        className="font-semibold text-openboy-text-main truncate group-hover:text-[#ffd600] transition-colors block"
                       >
                         {mon.name}
                       </Link>
-                      <div className="text-[11px] text-zinc-400 font-mono truncate">{mon.url}</div>
+                      <div className="text-[11px] text-openboy-text-muted font-mono truncate">{mon.url}</div>
                     </td>
 
                     {/* Cadence */}
-                    <td className="py-3.5 px-4 whitespace-nowrap font-mono text-zinc-300">
-                      {mon.intervalLabel || mon.interval}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <IntervalBadge interval={mon.interval} label={mon.intervalLabel || mon.interval} />
                     </td>
 
                     {/* Latency */}
-                    <td className="py-3.5 px-4 whitespace-nowrap font-mono font-bold text-zinc-200">
+                    <td className="py-3.5 px-4 whitespace-nowrap font-mono font-bold text-openboy-text-main">
                       {mon.lastLatency || 32}ms
                     </td>
 
@@ -209,7 +195,7 @@ export default function UptimePage() {
                             <div
                               key={i}
                               title={`Day ${i + 1}: ${isFailingDay ? "Incident (503 Error)" : "100% Operational"}`}
-                              className={`flex-1 h-full rounded-xs ${
+                              className={`flex-1 h-full rounded-2xs ${
                                 isFailingDay ? "bg-rose-500" : "bg-emerald-500/80"
                               }`}
                             />
@@ -219,25 +205,22 @@ export default function UptimePage() {
                     </td>
 
                     {/* Uptime SLA */}
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap font-mono font-bold text-emerald-400">
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap font-mono font-bold text-emerald-500 dark:text-emerald-400">
                       {mon.uptime || "100%"}
                     </td>
                   </tr>
                 );
               })}
-
-              {/* Skeletons while loading more */}
-              {isLoadingMore && (
-                <TableSkeletonRows
-                  rows={Math.min(12, Math.max(1, filtered.length - visibleCount))}
-                />
-              )}
             </tbody>
           </table>
         </div>
 
-        {/* Invisible sentinel for automatic infinite scroll */}
-        {hasMore && <div ref={loadSentinelRef} className="h-4 w-full pointer-events-none" />}
+        {/* Shareable Infinite Scroll Sentinel */}
+        <InfiniteScrollSentinel
+          sentinelRef={loadSentinelRef}
+          hasMore={hasMore}
+          isLoadingMore={isLoadingMore}
+        />
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ export const metadata = {
 export default function DashboardLayout({ children }) {
   return (
     <DashboardProvider>
-      <div className="min-h-screen bg-[#14170e] text-[#f4f5ee] flex selection:bg-[#ffd600] selection:text-black">
+      <div className="min-h-screen bg-openboy-bg text-openboy-text-main flex selection:bg-[#ffd600] selection:text-black transition-colors duration-200">
         {/* Always Open Left Sidebar */}
         <DashboardSidebar />
 

@@ -1,21 +1,54 @@
 @import "tailwindcss";
 
-:root {
-  --background: #14170e;
-  --foreground: #f4f5ee;
-  
-  --openboy-bg: #14170e;
-  --openboy-surface: #1b1f13;
-  --openboy-surface-hover: #222718;
-  --openboy-surface-card: #1f2416;
-  --openboy-border: #2c331f;
-  --openboy-border-light: #3e482b;
+@variant dark (&:where(.dark, .dark *));
+
+:root,
+html.dark,
+.dark,
+[data-theme="dark"] {
+  --openboy-bg: #12150c;
+  --openboy-surface: #181c12;
+  --openboy-surface-hover: #222817;
+  --openboy-surface-card: #1a1f13;
+  --openboy-surface-subtle: #14170e;
+  --openboy-border: #273019;
+  --openboy-border-light: #384328;
   --openboy-yellow: #ffd600;
   --openboy-yellow-hover: #eed000;
+  --openboy-yellow-text: #ffd600;
+  --openboy-yellow-text-hover: #eed000;
   --openboy-mint: #4ade80;
   --openboy-text-main: #f5f6f0;
   --openboy-text-muted: #9ba187;
   --openboy-text-dim: #6b7359;
+  --openboy-scrollbar-track: #12150c;
+  --openboy-scrollbar-thumb: #273019;
+  --openboy-scrollbar-thumb-hover: #384328;
+  color-scheme: dark;
+}
+
+html.light,
+.light,
+[data-theme="light"] {
+  --openboy-bg: #f5f6f1;
+  --openboy-surface: #ffffff;
+  --openboy-surface-hover: #edf2e4;
+  --openboy-surface-card: #ffffff;
+  --openboy-surface-subtle: #f8faf5;
+  --openboy-border: #e2e7d8;
+  --openboy-border-light: #cbd6bc;
+  --openboy-yellow: #ffd600;
+  --openboy-yellow-hover: #eed000;
+  --openboy-yellow-text: #92400e;
+  --openboy-yellow-text-hover: #78350f;
+  --openboy-mint: #16a34a;
+  --openboy-text-main: #13170e;
+  --openboy-text-muted: #535e44;
+  --openboy-text-dim: #798668;
+  --openboy-scrollbar-track: #f5f6f1;
+  --openboy-scrollbar-thumb: #d7dfcc;
+  --openboy-scrollbar-thumb-hover: #b5c2a4;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -23,6 +56,7 @@
   --color-openboy-surface: var(--openboy-surface);
   --color-openboy-surface-hover: var(--openboy-surface-hover);
   --color-openboy-surface-card: var(--openboy-surface-card);
+  --color-openboy-surface-subtle: var(--openboy-surface-subtle);
   --color-openboy-border: var(--openboy-border);
   --color-openboy-border-light: var(--openboy-border-light);
   --color-openboy-yellow: var(--openboy-yellow);
@@ -34,35 +68,101 @@
   --font-sans: var(--font-inter);
 }
 
+/* Explicit fallback utilities for rock-solid theme resolution */
+.bg-openboy-bg {
+  background-color: var(--openboy-bg);
+}
+.bg-openboy-surface {
+  background-color: var(--openboy-surface);
+}
+.bg-openboy-surface-hover:hover {
+  background-color: var(--openboy-surface-hover);
+}
+.bg-openboy-surface-card {
+  background-color: var(--openboy-surface-card);
+}
+.bg-openboy-surface-subtle {
+  background-color: var(--openboy-surface-subtle);
+}
+.text-openboy-text-main {
+  color: var(--openboy-text-main);
+}
+.text-openboy-text-muted {
+  color: var(--openboy-text-muted);
+}
+.text-openboy-text-dim {
+  color: var(--openboy-text-dim);
+}
+.border-openboy-border {
+  border-color: var(--openboy-border);
+}
+.border-openboy-border-light {
+  border-color: var(--openboy-border-light);
+}
+
+/* LIGHT THEME HIGH-CONTRAST ACCENT MAPPING */
+/* Converts low-contrast yellow text and icons to sharp, readable amber in light mode */
+html.light .text-\[\#ffd600\],
+html.light [class*="text-[#ffd600]"],
+.light .text-\[\#ffd600\],
+.light [class*="text-[#ffd600]"] {
+  color: #92400e !important;
+}
+
+html.light .hover\:text-\[\#ffd600\]:hover,
+html.light [class*="hover:text-[#ffd600]"]:hover,
+.light .hover\:text-\[\#ffd600\]:hover,
+.light [class*="hover:text-[#ffd600]"]:hover {
+  color: #78350f !important;
+}
+
+html.light .group:hover .group-hover\:text-\[\#ffd600\],
+html.light [class*="group-hover:text-[#ffd600]"],
+.light .group:hover .group-hover\:text-\[\#ffd600\],
+.light [class*="group-hover:text-[#ffd600]"] {
+  color: #92400e !important;
+}
+
+/* Light mode border accents for subtle rings and borders */
+html.light .border-\[\#ffd600\]\/40,
+.light .border-\[\#ffd600\]\/40 {
+  border-color: rgba(146, 64, 14, 0.3) !important;
+}
+html.light .hover\:border-\[\#ffd600\]:hover,
+.light .hover\:border-\[\#ffd600\]:hover {
+  border-color: rgba(146, 64, 14, 0.6) !important;
+}
+
 body {
-  background-color: #14170e;
-  color: #f4f5ee;
+  background-color: var(--openboy-bg);
+  color: var(--openboy-text-main);
   font-family: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom scrollbar for dark olive theme */
+/* Custom dynamic scrollbar responding to current active theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #14170e;
+  background: var(--openboy-scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2c331f;
+  background: var(--openboy-scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475432;
+  background: var(--openboy-scrollbar-thumb-hover);
 }
 
 /* Electric yellow button glow effect */
 .btn-yellow {
   background-color: #ffd600;
   color: #0d0f07;
-  font-weight: 600;
+  font-weight: 700;
   transition: all 0.15s ease-in-out;
 }
 .btn-yellow:hover {
@@ -76,7 +176,9 @@ body {
 
 /* Olive card border styling */
 .openboy-card {
-  background-color: #1b1f13;
-  border: 1px solid #2c331f;
-  border-radius: 0.5rem;
+  background-color: var(--openboy-surface);
+  border: 1px solid var(--openboy-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
