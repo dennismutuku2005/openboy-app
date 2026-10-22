@@ -1,11 +1,12 @@
-import { Inter } from "next/font/google";
+import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-const inter = Inter({
-  variable: "--font-inter",
+const nunitoSans = Nunito_Sans({
+  variable: "--font-nunito-sans",
   subsets: ["latin"],
   display: "swap",
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata = {
@@ -21,7 +22,7 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} h-full antialiased`}
+      className={`${nunitoSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-openboy-bg text-openboy-text-main font-sans selection:bg-[#ffd600] selection:text-black">
         <ThemeProvider>
