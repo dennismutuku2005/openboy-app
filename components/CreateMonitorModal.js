@@ -13,7 +13,6 @@ export default function CreateMonitorModal() {
   const [interval, setInterval] = useState("30s");
   const [customSeconds, setCustomSeconds] = useState(10);
   const [cronExpression, setCronExpression] = useState("*/5 * * * *");
-  const [notifications, setNotifications] = useState("defaults"); // "defaults" | "channels" | "off"
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [method, setMethod] = useState("GET");
   const [headers, setHeaders] = useState("");
@@ -32,7 +31,6 @@ export default function CreateMonitorModal() {
       setName("");
       setInterval("30s");
       setCustomSeconds(10);
-      setNotifications("defaults");
       setIsAdvancedOpen(false);
       setMethod("GET");
     }
@@ -266,101 +264,6 @@ export default function CreateMonitorModal() {
               </span>
             </div>
           )}
-
-          {/* Notifications Section */}
-          <div>
-            <span className="block text-xs font-semibold text-openboy-text-main mb-2">
-              Notifications
-            </span>
-            <div className="space-y-2 bg-openboy-surface-subtle p-3.5 rounded-md border border-openboy-border">
-              {/* Option 1: Use my defaults */}
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <div className="relative flex items-center justify-center">
-                  <input
-                    type="radio"
-                    name="notifications"
-                    checked={notifications === "defaults"}
-                    onChange={() => setNotifications("defaults")}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                      notifications === "defaults"
-                        ? "border-[#ffd600] bg-[#ffd600]"
-                        : "border-openboy-border-light bg-transparent group-hover:border-openboy-text-muted"
-                    }`}
-                  >
-                    {notifications === "defaults" && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-xs font-medium text-openboy-text-main block">
-                    Use my defaults
-                  </span>
-                  <span className="text-[11px] text-openboy-text-muted block">Email</span>
-                </div>
-              </label>
-
-              {/* Option 2: Choose channels */}
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <div className="relative flex items-center justify-center">
-                  <input
-                    type="radio"
-                    name="notifications"
-                    checked={notifications === "channels"}
-                    onChange={() => setNotifications("channels")}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                      notifications === "channels"
-                        ? "border-[#ffd600] bg-[#ffd600]"
-                        : "border-openboy-border-light bg-transparent group-hover:border-openboy-text-muted"
-                    }`}
-                  >
-                    {notifications === "channels" && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-xs font-medium text-openboy-text-main block">
-                    Choose channels
-                  </span>
-                  <span className="text-[11px] text-openboy-text-muted block">
-                    Slack, Webhook, Discord, Telegram
-                  </span>
-                </div>
-              </label>
-
-              {/* Option 3: Off */}
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <div className="relative flex items-center justify-center">
-                  <input
-                    type="radio"
-                    name="notifications"
-                    checked={notifications === "off"}
-                    onChange={() => setNotifications("off")}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
-                      notifications === "off"
-                        ? "border-[#ffd600] bg-[#ffd600]"
-                        : "border-openboy-border-light bg-transparent group-hover:border-openboy-text-muted"
-                    }`}
-                  >
-                    {notifications === "off" && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
-                    )}
-                  </div>
-                </div>
-                <span className="text-xs font-medium text-openboy-text-main">Off</span>
-              </label>
-            </div>
-          </div>
 
           {/* Advanced Accordion */}
           <div className="border border-openboy-border rounded-md overflow-hidden">

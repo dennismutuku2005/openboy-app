@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 import {
   Clock,
   Activity,
-  Settings,
   Plus,
   Zap,
   Layers,
@@ -43,7 +42,6 @@ export default function DashboardSidebar() {
     { href: "/dashboard/uptime", label: "Uptime SLA", icon: Activity },
     { href: "/dashboard/batchers", label: "Batchers", icon: Server },
     { href: "/dashboard/incidents", label: "Incidents", icon: ShieldAlert },
-    { href: "/dashboard/settings", label: "Settings", icon: Settings },
     { href: "/dashboard/profile", label: "Profile", icon: User },
   ];
 

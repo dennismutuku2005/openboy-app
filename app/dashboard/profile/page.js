@@ -5,12 +5,9 @@ import {
   Eye,
   EyeOff,
   Check,
-  Copy,
   AlertTriangle,
-  RotateCw,
   User,
   Lock,
-  KeyRound,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { MetricCardsSkeleton } from "@/components/DashboardSkeletons";
@@ -41,18 +38,12 @@ export default function ProfilePage() {
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  // API Token state
-  const [copiedToken, setCopiedToken] = useState(false);
-  const [isRegeneratingToken, setIsRegeneratingToken] = useState(false);
-  const [apiToken, setApiToken] = useState("ob_live_8f99e3a07c1264b91ae88029c");
-
   // Sync state from currentUser
   useEffect(() => {
     if (currentUser) {
       setName(currentUser.name || "Dennis Mutuku");
       setUsername(currentUser.username || "admin");
       setEmail(currentUser.email || "dennis@openboy.dev");
-      if (currentUser.apiKey) setApiToken(currentUser.apiKey);
     }
   }, [currentUser]);
 
@@ -129,22 +120,6 @@ export default function ProfilePage() {
         setPasswordError(res.message);
       }
     }, 450);
-  };
-
-  const handleCopyToken = () => {
-    navigator.clipboard.writeText(apiToken);
-    setCopiedToken(true);
-    setTimeout(() => setCopiedToken(false), 2000);
-  };
-
-  const handleRegenerateToken = () => {
-    setIsRegeneratingToken(true);
-    setTimeout(() => {
-      const newToken = "ob_live_" + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-      setApiToken(newToken);
-      updateProfile({ apiKey: newToken });
-      setIsRegeneratingToken(false);
-    }, 400);
   };
 
   const userInitial = (name || username || "A").slice(0, 1).toUpperCase();
@@ -390,52 +365,6 @@ export default function ProfilePage() {
           </div>
         </Card>
       </div>
-
-      {/* CARD 3: API Token */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <CardTitle>
-                <KeyRound className="w-4 h-4 text-[#ffd600]" />
-                <span>API Token & Programmatic Key</span>
-              </CardTitle>
-              <CardDescription>
-                Secret token for programmatic cron pinging, automated webhook dispatches, and SDK ingestion.
-              </CardDescription>
-            </div>
-            <StatusBadge status="active" label="Live Key" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="flex-1 bg-openboy-surface-subtle border border-openboy-border rounded-lg px-3.5 py-2.5 font-mono text-xs text-openboy-text-main flex items-center justify-between overflow-hidden">
-              <span className="truncate">{apiToken}</span>
-              <span className="text-[10px] font-bold text-emerald-500 ml-2 shrink-0">ACTIVE</span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCopyToken}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-openboy-border bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Copy className="w-3.5 h-3.5 text-[#ffd600]" />
-                <span>{copiedToken ? "Copied!" : "Copy Token"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleRegenerateToken}
-                disabled={isRegeneratingToken}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-300 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                <RotateCw className={`w-3.5 h-3.5 text-rose-500 ${isRegeneratingToken ? "animate-spin" : ""}`} />
-                <span>Regenerate</span>
-              </button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
