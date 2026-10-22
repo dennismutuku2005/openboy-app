@@ -309,6 +309,7 @@ export default function DashboardMainPage() {
         <div className="space-y-4">
           {filteredMonitors.length === 0 ? (
             <EmptyState
+              icon={Clock}
               title="No schedules found"
               description="No monitors match your current filter criteria. Start by creating a new cron schedule or clearing your active filters."
               action={{

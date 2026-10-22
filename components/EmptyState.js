@@ -14,36 +14,41 @@ export default function EmptyState({
 }) {
   return (
     <div
-      className={`border-l-2 border-[#ffd600] pl-5 py-6 space-y-3 bg-openboy-surface rounded-r-xl border border-l-2 border-openboy-border p-6 shadow-xs ${className}`}
+      className={`w-full bg-openboy-surface border border-openboy-border rounded-2xl py-12 px-6 sm:px-8 text-center flex flex-col items-center justify-center shadow-xs transition-all ${className}`}
     >
-      <div className="flex items-start gap-3">
-        {Icon && (
-          <div className="w-9 h-9 rounded-lg bg-openboy-surface-subtle border border-openboy-border flex items-center justify-center text-openboy-text-muted shrink-0">
-            <Icon className="w-4 h-4" />
-          </div>
-        )}
-        <div className="space-y-1">
-          <h3 className="text-sm font-bold text-openboy-text-main">{title}</h3>
-          {description && (
-            <p className="text-xs text-openboy-text-muted max-w-lg leading-relaxed">
-              {description}
-            </p>
-          )}
+      {Icon && (
+        <div className="w-12 h-12 rounded-xl bg-openboy-surface-subtle border border-openboy-border flex items-center justify-center text-openboy-text-muted mb-3.5 shadow-2xs">
+          <Icon className="w-5 h-5 text-[#ffd600]" />
         </div>
+      )}
+
+      <div className="space-y-1.5 max-w-md mx-auto">
+        <h3 className="text-base sm:text-lg font-bold text-openboy-text-main tracking-tight">
+          {title}
+        </h3>
+        {description && (
+          <p className="text-xs sm:text-sm text-openboy-text-muted leading-relaxed">
+            {description}
+          </p>
+        )}
       </div>
 
       {action && (
-        <div className="pt-2">
+        <div className="pt-5 flex items-center justify-center">
           {typeof action === "function" ? (
             action()
           ) : action.label ? (
             <button
               type="button"
               onClick={action.onClick}
-              className="px-4 py-2 bg-[#ffd600] hover:bg-[#eed000] text-black font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-all shadow-xs hover:shadow-md cursor-pointer active:scale-95"
+              className="px-5 py-2.5 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs sm:text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-xs hover:shadow-md cursor-pointer active:scale-95"
             >
               <span>{action.label}</span>
-              {action.icon ? <action.icon className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 stroke-[3]" />}
+              {action.icon ? (
+                <action.icon className="w-4 h-4 stroke-[2.5]" />
+              ) : (
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+              )}
             </button>
           ) : (
             action

@@ -412,8 +412,14 @@ function ExecutionsContent() {
             <tbody className="divide-y divide-openboy-border">
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-openboy-text-muted">
-                    No execution records match the current filter.
+                  <td colSpan={6} className="py-12 text-center text-openboy-text-muted">
+                    <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                      <div className="w-10 h-10 rounded-xl bg-openboy-surface-subtle border border-openboy-border flex items-center justify-center text-openboy-text-muted mb-1 shadow-2xs">
+                        <Activity className="w-4 h-4 text-[#ffd600]" />
+                      </div>
+                      <div className="font-bold text-openboy-text-main text-sm">No execution records found</div>
+                      <p className="text-xs text-openboy-text-muted leading-relaxed">No execution records match the current filter or search criteria.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
