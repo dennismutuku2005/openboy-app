@@ -3,15 +3,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus, Clock, Loader2, Menu } from "lucide-react";
+import { Clock, Menu } from "lucide-react";
 import { useDashboard } from "./DashboardContext";
 import ThemeToggle from "./ThemeToggle";
 
 export default function DashboardNavbar() {
   const pathname = usePathname();
-  const { openCreateModal, monitors, setIsMobileSidebarOpen, currentUser } = useDashboard();
+  const { monitors, setIsMobileSidebarOpen, currentUser } = useDashboard();
   const [utcTime, setUtcTime] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -29,11 +28,6 @@ export default function DashboardNavbar() {
   const userInitial = (currentUser?.name || currentUser?.username || "A").slice(0, 1).toUpperCase();
   const currentSection = pathname.replace("/dashboard", "").replace("/", "") || "schedules";
 
-  const handleOpenCreate = () => {
-    setIsCreating(true);
-    openCreateModal();
-    setTimeout(() => setIsCreating(false), 300);
-  };
 
   return (
     <header className="w-full bg-openboy-surface/95 backdrop-blur-md border-b border-openboy-border px-4 sm:px-5 md:px-6 py-3 sm:py-3.5 min-h-[56px] sm:min-h-[64px] flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-0 z-20 transition-all">
@@ -117,20 +111,6 @@ export default function DashboardNavbar() {
           <ThemeToggle variant="compact" />
         </div>
 
-        {/* Substantial Action Button */}
-        <button
-          type="button"
-          onClick={handleOpenCreate}
-          disabled={isCreating}
-          className="w-full sm:w-auto py-2.5 px-4 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-60"
-        >
-          {isCreating ? (
-            <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin text-black" />
-          ) : (
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3]" />
-          )}
-          <span>New Cron</span>
-        </button>
 
         {/* Desktop Profile Avatar */}
         <div className="hidden md:flex items-center pl-1 border-l border-openboy-border">
