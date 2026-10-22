@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }) {
         {/* End-to-end Left-oriented Content Pane (No Footer, Full Width) */}
         <div className="flex-1 flex flex-col min-w-0 min-h-screen">
           <DashboardNavbar />
-          <main className="flex-1 p-3.5 sm:p-6 md:p-8 w-full max-w-none min-w-0">
+          <main className="flex-1 px-2.5 sm:px-3.5 md:px-4 py-4 sm:py-6 w-full max-w-none min-w-0">
             {children}
           </main>
         </div>
