@@ -64,22 +64,23 @@ export default function ProfilePage() {
 
   const strength = getPasswordStrength(newPassword);
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
     setIsSavingProfile(true);
 
-    setTimeout(() => {
-      updateProfile({
+    try {
+      await updateProfile({
         name,
         email,
       });
-      setIsSavingProfile(false);
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 3500);
-    }, 300);
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
     setPasswordError("");
     setPasswordSuccess("");
@@ -106,10 +107,8 @@ export default function ProfilePage() {
 
     setIsUpdatingPassword(true);
 
-    setTimeout(() => {
-      const res = updatePassword(currentPassword, newPassword);
-      setIsUpdatingPassword(false);
-
+    try {
+      const res = await updatePassword(currentPassword, newPassword);
       if (res.success) {
         setPasswordSuccess("Password updated successfully.");
         setCurrentPassword("");
@@ -119,7 +118,11 @@ export default function ProfilePage() {
       } else {
         setPasswordError(res.message);
       }
-    }, 450);
+    } catch (err) {
+      setPasswordError(err.message || "Failed to update password.");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   const userInitial = (name || username || "A").slice(0, 1).toUpperCase();

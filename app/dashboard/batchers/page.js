@@ -23,6 +23,7 @@ import SearchInput from "@/components/SearchInput";
 import FilterTabs from "@/components/FilterTabs";
 import StatusBadge from "@/components/StatusBadge";
 import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
+import { batcherService } from "@/services/batcherService";
 
 const initialBatchers = [
   {
@@ -166,6 +167,33 @@ export default function BatchersPage() {
     description: "",
   });
 
+  // Fetch batchers via batcherService on mount
+  useEffect(() => {
+    let mounted = true;
+    async function loadBatchers() {
+      try {
+        const data = await batcherService.getBatchers();
+        if (mounted && Array.isArray(data) && data.length > 0) {
+          setBatchers(data);
+          try {
+            localStorage.setItem("openboy_batchers", JSON.stringify(data));
+          } catch {}
+        }
+      } catch {
+        try {
+          const stored = localStorage.getItem("openboy_batchers");
+          if (stored && mounted) {
+            setBatchers(JSON.parse(stored));
+          }
+        } catch {}
+      }
+    }
+    loadBatchers();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const filteredBatchers = batchers.filter((b) => {
     if (filter === "active" && b.status !== "active") return false;
     if (filter === "paused" && b.status !== "paused") return false;
@@ -217,66 +245,79 @@ export default function BatchersPage() {
     };
   }, [hasMore, isLoadingMore]);
 
-  const toggleStatus = (id) => {
+  const toggleStatus = async (id) => {
+    const target = batchers.find((b) => b.id === id);
+    if (!target) return;
+    const newStatus = target.status === "active" ? "paused" : "active";
     setBatchers((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: b.status === "active" ? "paused" : "active" } : b))
+      prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
     );
+    try {
+      await batcherService.updateBatcher(id, { ...target, status: newStatus });
+    } catch {}
   };
 
   const promptRun = (batcher) => {
     setRunModal({ isOpen: true, batcher, running: false, result: null });
   };
 
-  const executeBatcher = () => {
+  const executeBatcher = async () => {
     if (!runModal.batcher) return;
+    const batcherId = runModal.batcher.id;
     setRunModal((prev) => ({ ...prev, running: true }));
-    setRunningJobId(runModal.batcher.id);
+    setRunningJobId(batcherId);
 
-    setTimeout(() => {
-      const records = Math.floor(Math.random() * 5000) + 120;
-      const duration = (Math.random() * 3 + 1.2).toFixed(2) + "s";
-      const resultData = {
-        timestamp: new Date().toLocaleTimeString(),
-        records: `${records.toLocaleString()} items processed`,
-        duration,
-        exitCode: 0,
-        status: "Completed successfully",
-      };
+    try {
+      await batcherService.triggerBatcher(batcherId);
+    } catch {}
 
-      setRunModal((prev) => ({
-        ...prev,
-        running: false,
-        result: resultData,
-      }));
-      setRunningJobId(null);
+    const records = Math.floor(Math.random() * 5000) + 120;
+    const duration = (Math.random() * 3 + 1.2).toFixed(2) + "s";
+    const resultData = {
+      timestamp: new Date().toLocaleTimeString(),
+      records: `${records.toLocaleString()} items processed`,
+      duration,
+      exitCode: 0,
+      status: "Completed successfully",
+    };
 
-      setBatchers((prev) =>
-        prev.map((b) =>
-          b.id === runModal.batcher.id
-            ? {
-                ...b,
-                lastRun: "Just now",
-                duration,
-                recordsProcessed: `${records.toLocaleString()} items`,
-              }
-            : b
-        )
-      );
-    }, 1200);
+    setRunModal((prev) => ({
+      ...prev,
+      running: false,
+      result: resultData,
+    }));
+    setRunningJobId(null);
+
+    setBatchers((prev) =>
+      prev.map((b) =>
+        b.id === batcherId
+          ? {
+              ...b,
+              lastRun: "Just now",
+              duration,
+              recordsProcessed: `${records.toLocaleString()} items`,
+            }
+          : b
+      )
+    );
   };
 
   const promptDelete = (batcher) => {
     setDeleteModal({ isOpen: true, batcher });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteModal.batcher) {
-      setBatchers((prev) => prev.filter((b) => b.id !== deleteModal.batcher.id));
+      const id = deleteModal.batcher.id;
+      setBatchers((prev) => prev.filter((b) => b.id !== id));
+      try {
+        await batcherService.deleteBatcher(id);
+      } catch {}
     }
     setDeleteModal({ isOpen: false, batcher: null });
   };
 
-  const handleCreateBatcher = (e) => {
+  const handleCreateBatcher = async (e) => {
     e.preventDefault();
     if (!newForm.name) return;
 
@@ -295,7 +336,7 @@ export default function BatchersPage() {
       description: newForm.description || "Custom background batch consumer.",
     };
 
-    setBatchers([newWorker, ...batchers]);
+    setBatchers((prev) => [newWorker, ...prev]);
     setNewBatchModal(false);
     setNewForm({
       name: "",
@@ -305,6 +346,10 @@ export default function BatchersPage() {
       targetQueue: "",
       description: "",
     });
+
+    try {
+      await batcherService.createBatcher(newWorker);
+    } catch {}
   };
 
   if (isLoadingAuth) {

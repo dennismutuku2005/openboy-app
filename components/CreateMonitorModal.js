@@ -107,7 +107,7 @@ export default function CreateMonitorModal() {
       lastLatency: Math.floor(Math.random() * 40) + 20,
       lastChecked: "Just created",
       uptime: "100%",
-      notifications: notifications,
+      notifications: [],
       category: intervalSec <= 60 ? "uptime" : "batcher",
       expectedStatus: parseInt(expectedStatus) || 200,
       timeout: parseInt(timeout) || 10,

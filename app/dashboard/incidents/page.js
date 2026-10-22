@@ -26,6 +26,7 @@ import SearchInput from "@/components/SearchInput";
 import FilterTabs from "@/components/FilterTabs";
 import StatusBadge from "@/components/StatusBadge";
 import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
+import { incidentService } from "@/services/incidentService";
 
 const initialIncidents = [
   {
@@ -142,6 +143,33 @@ export default function IncidentsPage() {
   const [resolveModal, setResolveModal] = useState({ isOpen: false, incident: null });
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, incident: null });
 
+  // Fetch incidents from incidentService on mount
+  useEffect(() => {
+    let mounted = true;
+    async function loadIncidents() {
+      try {
+        const data = await incidentService.getIncidents();
+        if (mounted && Array.isArray(data) && data.length > 0) {
+          setIncidents(data);
+          try {
+            localStorage.setItem("openboy_incidents", JSON.stringify(data));
+          } catch {}
+        }
+      } catch {
+        try {
+          const stored = localStorage.getItem("openboy_incidents");
+          if (stored && mounted) {
+            setIncidents(JSON.parse(stored));
+          }
+        } catch {}
+      }
+    }
+    loadIncidents();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const activeFailingMonitors = (monitors || []).filter((m) => m.status === "failing");
 
   const filteredIncidents = incidents.filter((inc) => {
@@ -202,11 +230,12 @@ export default function IncidentsPage() {
     setResolveModal({ isOpen: true, incident });
   };
 
-  const confirmResolve = () => {
+  const confirmResolve = async () => {
     if (resolveModal.incident) {
+      const incidentId = resolveModal.incident.id;
       setIncidents((prev) =>
         prev.map((inc) =>
-          inc.id === resolveModal.incident.id
+          inc.id === incidentId
             ? {
                 ...inc,
                 status: "resolved",
@@ -216,6 +245,9 @@ export default function IncidentsPage() {
             : inc
         )
       );
+      try {
+        await incidentService.resolveIncident(incidentId);
+      } catch {}
     }
     setResolveModal({ isOpen: false, incident: null });
   };
@@ -224,9 +256,13 @@ export default function IncidentsPage() {
     setDeleteModal({ isOpen: true, incident });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteModal.incident) {
-      setIncidents((prev) => prev.filter((i) => i.id !== deleteModal.incident.id));
+      const incidentId = deleteModal.incident.id;
+      setIncidents((prev) => prev.filter((i) => i.id !== incidentId));
+      try {
+        await incidentService.deleteIncident(incidentId);
+      } catch {}
     }
     setDeleteModal({ isOpen: false, incident: null });
   };
