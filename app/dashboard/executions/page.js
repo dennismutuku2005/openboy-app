@@ -63,21 +63,7 @@ function ExecutionsContent() {
   // Find targeted schedule if ?monitor=... query param is present
   const selectedSchedule = useMemo(() => {
     if (!monitorParam) return null;
-    return (
-      monitors.find((m) => m.id === monitorParam) || {
-        id: monitorParam,
-        name: "Scheduled Endpoint",
-        url: "https://api.openboy.dev/v1/health",
-        method: "GET",
-        interval: "30s",
-        intervalLabel: "30s",
-        status: "active",
-        uptime: "99.98%",
-        lastLatency: 38,
-        totalPings: 1420,
-        failedPings: 0,
-      }
-    );
+    return monitors.find((m) => m.id === monitorParam) || null;
   }, [monitorParam, monitors]);
 
   // Filter logs based on schedule, status filter, and search query
