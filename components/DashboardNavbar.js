@@ -83,11 +83,6 @@ export default function DashboardNavbar() {
       {/* Right: Operational Status, Live UTC Clock, Theme Toggle, Primary Action Button & Desktop Profile Avatar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
         <div className="flex items-center justify-between sm:justify-start gap-2">
-          {/* Cluster Status Badge */}
-          <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-openboy-surface-subtle border border-openboy-border text-xs font-mono text-openboy-text-main">
-            <span className="text-openboy-text-muted">Engine:</span>
-            <span className="text-emerald-500 dark:text-emerald-400 font-semibold">Online</span>
-          </div>
 
           {/* Live Clock */}
           {utcTime && (
