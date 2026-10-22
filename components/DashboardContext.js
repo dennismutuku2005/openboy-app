@@ -142,11 +142,14 @@ export function DashboardProvider({ children }) {
   const addMonitor = async (newMonitor) => {
     try {
       const created = await monitorService.createMonitor(newMonitor);
-      const mon = created || newMonitor;
-      setMonitors((prev) => [mon, ...prev]);
+      if (created) {
+        setMonitors((prev) => [created, ...prev]);
+        return created;
+      }
+      return null;
     } catch (err) {
       console.error("Failed to persist monitor to API:", err);
-      setMonitors((prev) => [newMonitor, ...prev]);
+      throw err;
     }
   };
 

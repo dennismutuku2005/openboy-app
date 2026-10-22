@@ -19,8 +19,10 @@ export default function CreateMonitorModal() {
   const [body, setBody] = useState("");
   const [expectedStatus, setExpectedStatus] = useState("200");
   const [timeout, setTimeoutVal] = useState("10");
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    setError("");
     if (modalInitialData) {
       if (modalInitialData.url) setUrl(modalInitialData.url);
       if (modalInitialData.name) setName(modalInitialData.name);
@@ -33,14 +35,17 @@ export default function CreateMonitorModal() {
       setCustomSeconds(10);
       setIsAdvancedOpen(false);
       setMethod("GET");
+      setHeaders("");
+      setBody("");
     }
   }, [modalInitialData, isModalOpen]);
 
   if (!isModalOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!url.trim()) return;
+    setError("");
 
     let targetUrl = url.trim();
     if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
@@ -94,36 +99,46 @@ export default function CreateMonitorModal() {
         break;
     }
 
-    const newMonitor = {
-      id: "mon-" + Date.now(),
+    // Parse headers if provided
+    let headersMap = {};
+    if (headers && headers.trim()) {
+      try {
+        headersMap = JSON.parse(headers);
+      } catch {
+        headers.split("\n").forEach((line) => {
+          const parts = line.split(":");
+          if (parts.length >= 2) {
+            headersMap[parts[0].trim()] = parts.slice(1).join(":").trim();
+          }
+        });
+      }
+    }
+
+    const payload = {
       name: name.trim() || targetUrl.replace(/https?:\/\//, "").slice(0, 30),
       url: targetUrl,
       method: method,
       interval: interval,
       intervalSeconds: intervalSec,
       intervalLabel: intervalLabel,
-      status: "active",
-      lastStatus: 200,
-      lastLatency: Math.floor(Math.random() * 40) + 20,
-      lastChecked: "Just created",
-      uptime: "100%",
-      notifications: [],
+      cronExpr: interval === "cron" ? cronExpression : "",
       category: intervalSec <= 60 ? "uptime" : "batcher",
+      notifications: "defaults",
+      headers: headersMap,
+      body: body.trim() || "",
       expectedStatus: parseInt(expectedStatus) || 200,
       timeout: parseInt(timeout) || 10,
-      totalPings: 1,
-      failedPings: 0,
-      history: [
-        { status: 200, latency: 32, time: "Just now", ok: true },
-      ],
     };
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      addMonitor(newMonitor);
-      setIsSubmitting(false);
+    try {
+      await addMonitor(payload);
       closeCreateModal();
-    }, 300);
+    } catch (err) {
+      setError(err?.message || "Failed to create monitor. Please check your inputs.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -145,6 +160,12 @@ export default function CreateMonitorModal() {
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+          {error && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-xs text-rose-500 font-medium animate-fade-in flex items-center justify-between">
+              <span>{error}</span>
+              <button type="button" onClick={() => setError("")} className="text-rose-400 hover:text-rose-200">×</button>
+            </div>
+          )}
           {/* URL Input */}
           <div>
             <label className="block text-xs font-medium text-openboy-text-main mb-1.5">
