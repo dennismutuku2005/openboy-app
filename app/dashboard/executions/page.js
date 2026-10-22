@@ -122,7 +122,18 @@ function ExecutionsContent() {
       );
     }
 
-    return result;
+    // Safeguard deduplication to avoid any duplicate run entries or React key collisions
+    const seen = new Set();
+    const unique = [];
+    for (const item of result) {
+      const key = item.id || `${item.monitorId}-${item.timestamp}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(item);
+      }
+    }
+
+    return unique;
   }, [logs, selectedSchedule, filter, search]);
 
   const hasMore = visibleCount < filteredLogs.length;
@@ -406,9 +417,9 @@ function ExecutionsContent() {
                   </td>
                 </tr>
               ) : (
-                filteredLogs.slice(0, visibleCount).map((log) => (
+                filteredLogs.slice(0, visibleCount).map((log, idx) => (
                   <tr
-                    key={log.id}
+                    key={log.id ? `${log.id}-${idx}` : `log-${idx}`}
                     onClick={() => setSelectedLog(log)}
                     className="hover:bg-openboy-surface-hover transition-colors cursor-pointer group"
                     title="Click to view execution trace"

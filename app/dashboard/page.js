@@ -554,8 +554,8 @@ export default function DashboardMainPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-openboy-border">
-                {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-openboy-surface-hover transition-colors">
+                {logs.map((log, idx) => (
+                  <tr key={log.id ? `${log.id}-${idx}` : `log-${idx}`} className="hover:bg-openboy-surface-hover transition-colors">
                     <td className="py-3 px-4">
                       <StatusBadge status={log.ok ? 200 : log.status || 500} label={String(log.status || 200)} />
                     </td>
@@ -594,8 +594,8 @@ export default function DashboardMainPage() {
                 <span className="text-xs font-mono text-rose-500 dark:text-rose-300 font-bold">{errorLogs.length} failures</span>
               </div>
               <div className="divide-y divide-openboy-border">
-                {errorLogs.map((err) => (
-                  <div key={err.id} className="p-4 space-y-2 hover:bg-rose-500/5 transition-colors">
+                {errorLogs.map((err, idx) => (
+                  <div key={err.id ? `${err.id}-${idx}` : `err-${idx}`} className="p-4 space-y-2 hover:bg-rose-500/5 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="font-bold text-openboy-text-main text-xs">{err.monitorName}</div>
                       <StatusBadge status={err.status} label={`${err.status} ${err.statusText}`} />

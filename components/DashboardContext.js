@@ -78,7 +78,17 @@ export function DashboardProvider({ children }) {
       try {
         const logsData = await executionService.getExecutions({ limit: 50 });
         if (isMounted) {
-          setLogs(logsData?.logs && Array.isArray(logsData.logs) ? logsData.logs : []);
+          const rawLogs = logsData?.logs && Array.isArray(logsData.logs) ? logsData.logs : [];
+          const seen = new Set();
+          const cleanLogs = [];
+          for (const item of rawLogs) {
+            if (item && item.id) {
+              if (seen.has(item.id)) continue;
+              seen.add(item.id);
+            }
+            cleanLogs.push(item);
+          }
+          setLogs(cleanLogs);
         }
       } catch {
         if (isMounted) setLogs([]);
@@ -100,7 +110,13 @@ export function DashboardProvider({ children }) {
   useEffect(() => {
     const unsubscribe = executionService.subscribeLiveStream(
       (newLog) => {
-        setLogs((prev) => [newLog, ...prev].slice(0, 100));
+        if (!newLog) return;
+        setLogs((prev) => {
+          if (newLog.id && prev.some((l) => l.id === newLog.id)) {
+            return prev;
+          }
+          return [newLog, ...prev].slice(0, 100);
+        });
         setMonitors((prev) =>
           prev.map((m) => {
             if (m.id === newLog.monitorId) {
@@ -111,6 +127,11 @@ export function DashboardProvider({ children }) {
                 lastChecked: "Just now",
                 status: newLog.ok ? (m.status === "failing" ? "active" : m.status) : "failing",
                 totalPings: (m.totalPings || 0) + 1,
+                failedPings: newLog.ok ? (m.failedPings || 0) : (m.failedPings || 0) + 1,
+                history: [
+                  { status: newLog.status, latency: newLog.latency, time: "Just now", ok: newLog.ok },
+                  ...(m.history || []).slice(0, 4),
+                ],
               };
             }
             return m;
@@ -200,7 +221,12 @@ export function DashboardProvider({ children }) {
     try {
       const liveLog = await monitorService.triggerPing(id);
       if (liveLog) {
-        setLogs((prev) => [liveLog, ...prev].slice(0, 50));
+        setLogs((prev) => {
+          if (liveLog.id && prev.some((l) => l.id === liveLog.id)) {
+            return prev;
+          }
+          return [liveLog, ...prev].slice(0, 100);
+        });
 
         setMonitors((prev) =>
           prev.map((m) => {
@@ -210,8 +236,6 @@ export function DashboardProvider({ children }) {
                 lastStatus: liveLog.status,
                 lastLatency: liveLog.latency,
                 lastChecked: "Just now",
-                totalPings: (m.totalPings || 0) + 1,
-                failedPings: liveLog.ok ? (m.failedPings || 0) : (m.failedPings || 0) + 1,
                 status: liveLog.ok ? (m.status === "failing" ? "active" : m.status) : "failing",
                 history: [
                   { status: liveLog.status, latency: liveLog.latency, time: "Just now", ok: liveLog.ok },
