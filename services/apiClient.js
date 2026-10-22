@@ -31,11 +31,10 @@ export async function apiRequest(endpoint, options = {}) {
 
     // If unauthorized, token expired or invalid
     if (res.status === 401 && typeof window !== "undefined") {
-      // If we are not already on login page, redirect
+      localStorage.removeItem("openboy_jwt");
+      localStorage.removeItem("openboy_user");
       if (!window.location.pathname.startsWith("/login")) {
-        localStorage.removeItem("openboy_jwt");
-        localStorage.removeItem("openboy_user");
-        window.location.href = "/login";
+        window.location.href = "/login?error=session_expired";
       }
     }
 

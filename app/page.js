@@ -9,8 +9,9 @@ export default function RootRedirectPage() {
 
   useEffect(() => {
     try {
+      const token = localStorage.getItem("openboy_jwt");
       const user = localStorage.getItem("openboy_user");
-      if (user) {
+      if (token && user) {
         router.replace("/dashboard");
       } else {
         router.replace("/login");

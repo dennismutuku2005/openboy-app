@@ -17,7 +17,17 @@ export function DashboardProvider({ children }) {
   const [modalInitialData, setModalInitialData] = useState(null);
   const [logs, setLogs] = useState([]);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("openboy_user");
+        return cached ? JSON.parse(cached) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   // Custom modal dialogs (no browser alert/confirm!)
@@ -32,7 +42,7 @@ export function DashboardProvider({ children }) {
     async function initializeSession() {
       // Must have valid session
       if (!authService.isAuthenticated()) {
-        router.push("/login");
+        authService.logout();
         return;
       }
 
@@ -45,9 +55,15 @@ export function DashboardProvider({ children }) {
             localStorage.setItem("openboy_user", JSON.stringify(profile));
           } catch {}
         }
-      } catch {
-        router.push("/login");
-        return;
+      } catch (err) {
+        // If JWT token is rejected (401 / expired), purge session and redirect
+        const msg = String(err?.message || "");
+        if (msg.includes("401") || msg.includes("Unauthorized") || msg.includes("expired") || msg.includes("Authentication required")) {
+          authService.logout();
+          return;
+        }
+        // If temporary network/server error, keep existing cached user session
+        console.warn("Could not sync profile from engine:", msg);
       }
 
       // Load real monitors from service

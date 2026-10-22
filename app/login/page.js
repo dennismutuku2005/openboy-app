@@ -14,12 +14,20 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Check if already authenticated
+  // Check if already authenticated or session expired
   useEffect(() => {
     try {
-      const user = localStorage.getItem("openboy_user");
-      if (user) {
-        router.replace("/dashboard");
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("error") === "session_expired") {
+          setError("Your session has expired. Please log in again.");
+        }
+
+        const token = localStorage.getItem("openboy_jwt");
+        const user = localStorage.getItem("openboy_user");
+        if (token && user && !params.get("error")) {
+          router.replace("/dashboard");
+        }
       }
     } catch {}
   }, [router]);
@@ -36,8 +44,12 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await authService.login(username.trim(), password.trim());
-      router.push("/dashboard");
+      const data = await authService.login(username.trim(), password.trim());
+      if (data?.token) {
+        router.replace("/dashboard");
+      } else {
+        throw new Error("Login failed: no token received from engine.");
+      }
     } catch (err) {
       setError(err.message || "Failed to authenticate with OpenBoy Engine.");
     } finally {
