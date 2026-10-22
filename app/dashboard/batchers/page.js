@@ -25,124 +25,9 @@ import StatusBadge from "@/components/StatusBadge";
 import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
 import { batcherService } from "@/services/batcherService";
 
-const initialBatchers = [
-  {
-    id: "batch-1",
-    name: "Analytics Event Ingestion Batcher",
-    jobKey: "events_ingest_10m",
-    schedule: "Every 10m",
-    cronExpr: "*/10 * * * *",
-    status: "active",
-    concurrency: "Mutex Locked",
-    lastRun: "3 minutes ago",
-    duration: "4.2s",
-    recordsProcessed: "18,420 events",
-    targetQueue: "kafka.events.raw",
-    description: "Flushes buffer pool into ClickHouse cold-storage partition every 10 minutes.",
-  },
-  {
-    id: "batch-2",
-    name: "Dead-Letter Queue (DLQ) Auto-Replayer",
-    jobKey: "webhook_dlq_replay",
-    schedule: "Every 10m",
-    cronExpr: "*/10 * * * *",
-    status: "active",
-    concurrency: "Strict FIFO",
-    lastRun: "8 minutes ago",
-    duration: "1.8s",
-    recordsProcessed: "42 retries",
-    targetQueue: "sqs.webhooks.dlq",
-    description: "Consumes rejected customer webhook events with exponential backoff.",
-  },
-  {
-    id: "batch-3",
-    name: "Postgres Vacuum & Statistics Analyzer",
-    jobKey: "pg_vacuum_analyze",
-    schedule: "Daily at 03:00 UTC",
-    cronExpr: "0 3 * * *",
-    status: "active",
-    concurrency: "Leader Node Only",
-    lastRun: "8 hours ago",
-    duration: "142.1s",
-    recordsProcessed: "1.2M dead tuples",
-    targetQueue: "rds.primary.pg16",
-    description: "Runs VACUUM ANALYZE across high-write audit log tables to prevent bloat.",
-  },
-  {
-    id: "batch-4",
-    name: "Stripe Billing Cycle Reconciliation",
-    jobKey: "stripe_reconciliation",
-    schedule: "Hourly at :00",
-    cronExpr: "0 * * * *",
-    status: "paused",
-    concurrency: "Single Instance",
-    lastRun: "Yesterday",
-    duration: "18.6s",
-    recordsProcessed: "340 invoices",
-    targetQueue: "billing.sync.reconcile",
-    description: "Reconciles subscription invoices against Stripe balance transactions.",
-  },
-  {
-    id: "batch-5",
-    name: "Customer Webhook Batch Dispatcher",
-    jobKey: "webhooks_customer_batch",
-    schedule: "Every 10m",
-    cronExpr: "*/10 * * * *",
-    status: "active",
-    concurrency: "Worker Pool (x4)",
-    lastRun: "1 minute ago",
-    duration: "3.1s",
-    recordsProcessed: "8,920 pings",
-    targetQueue: "edge.webhooks.outbound",
-    description: "Batches outbound event webhook notifications into compressed HTTP POST bursts.",
-  },
-  {
-    id: "batch-6",
-    name: "Vector Embeddings Batch Indexer",
-    jobKey: "vector_embeddings_sync",
-    schedule: "Every 10m",
-    cronExpr: "*/10 * * * *",
-    status: "active",
-    concurrency: "Worker Pool (x2)",
-    lastRun: "6 minutes ago",
-    duration: "8.5s",
-    recordsProcessed: "512 chunks",
-    targetQueue: "pinecone.embeddings.sync",
-    description: "Generates vector embeddings for updated documentation and knowledge base items.",
-  },
-  {
-    id: "batch-7",
-    name: "Redis Cache Eviction Sweeper",
-    jobKey: "redis_eviction_sweep",
-    schedule: "Every 10m",
-    cronExpr: "*/10 * * * *",
-    status: "active",
-    concurrency: "Single Instance",
-    lastRun: "5 minutes ago",
-    duration: "0.9s",
-    recordsProcessed: "140 sessions",
-    targetQueue: "redis.sessions.cleanup",
-    description: "Removes invalidated auth tokens and revokes idle sessions.",
-  },
-  {
-    id: "batch-8",
-    name: "Audit Log Hash Chain Notarizer",
-    jobKey: "audit_hash_notarize",
-    schedule: "Hourly at :30",
-    cronExpr: "30 * * * *",
-    status: "active",
-    concurrency: "Leader Node Only",
-    lastRun: "35 minutes ago",
-    duration: "6.4s",
-    recordsProcessed: "4,800 records",
-    targetQueue: "ledger.audit.immutable",
-    description: "Generates cryptographic SHA-256 Merkle root over hourly audit trail.",
-  },
-];
-
 export default function BatchersPage() {
   const { isLoadingAuth } = useDashboard();
-  const [batchers, setBatchers] = useState(initialBatchers);
+  const [batchers, setBatchers] = useState([]);
   const [runningJobId, setRunningJobId] = useState(null);
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -167,25 +52,17 @@ export default function BatchersPage() {
     description: "",
   });
 
-  // Fetch batchers via batcherService on mount
+  // Fetch real batchers via batcherService on mount
   useEffect(() => {
     let mounted = true;
     async function loadBatchers() {
       try {
         const data = await batcherService.getBatchers();
-        if (mounted && Array.isArray(data) && data.length > 0) {
-          setBatchers(data);
-          try {
-            localStorage.setItem("openboy_batchers", JSON.stringify(data));
-          } catch {}
+        if (mounted) {
+          setBatchers(Array.isArray(data) ? data : []);
         }
       } catch {
-        try {
-          const stored = localStorage.getItem("openboy_batchers");
-          if (stored && mounted) {
-            setBatchers(JSON.parse(stored));
-          }
-        } catch {}
+        if (mounted) setBatchers([]);
       }
     }
     loadBatchers();

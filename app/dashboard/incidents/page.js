@@ -28,140 +28,26 @@ import StatusBadge from "@/components/StatusBadge";
 import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
 import { incidentService } from "@/services/incidentService";
 
-const initialIncidents = [
-  {
-    id: "inc-101",
-    title: "Postgres Connection Pool Exhaustion on Legacy Reporting Service",
-    service: "Legacy Reporting Service",
-    url: "https://reports.legacy-service.internal/status",
-    severity: "P2 - High",
-    status: "investigating",
-    startedAt: "25 minutes ago",
-    duration: "Ongoing (25m)",
-    cause: "Exceeded max_connections limit of 100 during monthly aggregation.",
-    dispatchedTo: ["PagerDuty (DevOps OnCall)", "Slack #ops-alarms"],
-  },
-  {
-    id: "inc-100",
-    title: "Stripe Webhook Gateway 504 Gateway Timeout",
-    service: "Production API Health Ping",
-    url: "https://api.openboy.dev/v1/health",
-    severity: "P1 - Critical",
-    status: "resolved",
-    startedAt: "3 days ago",
-    duration: "4m 12s",
-    cause: "Network route flap between us-east-1 and Stripe edge ingest point.",
-    dispatchedTo: ["PagerDuty (Critical Escalation)", "SMS Lead Architect"],
-    resolvedAt: "3 days ago at 14:18 UTC",
-  },
-  {
-    id: "inc-99",
-    title: "SSL Handshake Latency Degradation (>2500ms)",
-    service: "High-Frequency Gateway Heartbeat",
-    url: "https://gateway.openboy.dev/ping",
-    severity: "P3 - Moderate",
-    status: "resolved",
-    startedAt: "12 days ago",
-    duration: "18m 45s",
-    cause: "OCSP stapling server timeout during TLS session renegotiation.",
-    dispatchedTo: ["Slack #ops-alarms"],
-    resolvedAt: "12 days ago at 09:40 UTC",
-  },
-  {
-    id: "inc-98",
-    title: "Kafka Event Ingest Buffer Saturation",
-    service: "Analytics Event Ingestion Batcher",
-    url: "https://worker.openboy.dev/batch/events",
-    severity: "P2 - High",
-    status: "resolved",
-    startedAt: "15 days ago",
-    duration: "8m 10s",
-    cause: "Disk I/O throttle on primary ClickHouse buffer disk volume.",
-    dispatchedTo: ["PagerDuty (DevOps)"],
-    resolvedAt: "15 days ago at 22:15 UTC",
-  },
-  {
-    id: "inc-97",
-    title: "Redis Cluster Failover Event",
-    service: "Realtime WebSocket Ingestion Node",
-    url: "https://ws-edge.openboy.dev/healthz",
-    severity: "P2 - High",
-    status: "resolved",
-    startedAt: "18 days ago",
-    duration: "2m 30s",
-    cause: "Leader replica crashed due to OOM memory spike; sentinel promoted slave.",
-    dispatchedTo: ["Slack #ops-alarms", "PagerDuty"],
-    resolvedAt: "18 days ago at 03:22 UTC",
-  },
-  {
-    id: "inc-96",
-    title: "Elasticsearch JVM Garbage Collection Pause (>15s)",
-    service: "Elasticsearch Index Rolling Optimizer",
-    url: "https://es.internal/_ilm/status",
-    severity: "P3 - Moderate",
-    status: "resolved",
-    startedAt: "21 days ago",
-    duration: "12m 04s",
-    cause: "Heap fragmentation under bursty indexing load.",
-    dispatchedTo: ["Slack #ops-alarms"],
-    resolvedAt: "21 days ago at 11:05 UTC",
-  },
-  {
-    id: "inc-95",
-    title: "AWS SQS Inflight Dead-Letter Spillover",
-    service: "Customer Webhook DLQ Replayer",
-    url: "https://webhooks.openboy.dev/dlq/replay",
-    severity: "P2 - High",
-    status: "resolved",
-    startedAt: "24 days ago",
-    duration: "6m 50s",
-    cause: "Customer destination HTTP endpoint returned repeated 502 Bad Gateway.",
-    dispatchedTo: ["PagerDuty (Webhooks)"],
-    resolvedAt: "24 days ago at 16:40 UTC",
-  },
-  {
-    id: "inc-94",
-    title: "DNS Query NXDOMAIN Intermittent Spike",
-    service: "Internal DNS Resolver Prober",
-    url: "https://dns.internal/healthcheck",
-    severity: "P1 - Critical",
-    status: "resolved",
-    startedAt: "28 days ago",
-    duration: "3m 44s",
-    cause: "CoreDNS pod restart during rolling node group upgrade.",
-    dispatchedTo: ["PagerDuty (Core Infra)", "Slack #critical"],
-    resolvedAt: "28 days ago at 08:14 UTC",
-  },
-];
-
 export default function IncidentsPage() {
   const { monitors, triggerPing, isLoadingAuth } = useDashboard();
-  const [incidents, setIncidents] = useState(initialIncidents);
+  const [incidents, setIncidents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("all");
 
   const [resolveModal, setResolveModal] = useState({ isOpen: false, incident: null });
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, incident: null });
 
-  // Fetch incidents from incidentService on mount
+  // Fetch real incidents from incidentService on mount
   useEffect(() => {
     let mounted = true;
     async function loadIncidents() {
       try {
         const data = await incidentService.getIncidents();
-        if (mounted && Array.isArray(data) && data.length > 0) {
-          setIncidents(data);
-          try {
-            localStorage.setItem("openboy_incidents", JSON.stringify(data));
-          } catch {}
+        if (mounted) {
+          setIncidents(Array.isArray(data) ? data : []);
         }
       } catch {
-        try {
-          const stored = localStorage.getItem("openboy_incidents");
-          if (stored && mounted) {
-            setIncidents(JSON.parse(stored));
-          }
-        } catch {}
+        if (mounted) setIncidents([]);
       }
     }
     loadIncidents();

@@ -39,25 +39,7 @@ export default function LoginPage() {
       await authService.login(username.trim(), password.trim());
       router.push("/dashboard");
     } catch (err) {
-      // If Go engine is reachable, display actual error message
-      if (err.message && !err.message.includes("Failed to fetch") && !err.message.includes("NetworkError")) {
-        setError(err.message);
-      } else {
-        // Fallback for offline local dev mode if Go engine is temporarily stopped
-        const fallbackUser = {
-          id: "usr-1",
-          username: username.trim(),
-          name: username.trim() === "admin" ? "Dennis Mutuku" : username.trim(),
-          email: `${username.trim()}@openboy.dev`,
-          role: "Operator",
-          apiKey: "ob_live_8f99e3a07c1264b91",
-        };
-        try {
-          localStorage.setItem("openboy_user", JSON.stringify(fallbackUser));
-          localStorage.setItem("openboy_jwt", "demo_jwt_session_token");
-        } catch {}
-        router.push("/dashboard");
-      }
+      setError(err.message || "Failed to authenticate with OpenBoy Engine.");
     } finally {
       setIsSubmitting(false);
     }
