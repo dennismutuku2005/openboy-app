@@ -76,7 +76,7 @@ export function DashboardProvider({ children }) {
 
       // Load real execution logs from service
       try {
-        const logsData = await executionService.getExecutions({ limit: 50 });
+        const logsData = await executionService.getExecutions({ limit: 200 });
         if (isMounted) {
           const rawLogs = logsData?.logs && Array.isArray(logsData.logs) ? logsData.logs : [];
           const seen = new Set();
@@ -115,7 +115,7 @@ export function DashboardProvider({ children }) {
           if (newLog.id && prev.some((l) => l.id === newLog.id)) {
             return prev;
           }
-          return [newLog, ...prev].slice(0, 100);
+          return [newLog, ...prev].slice(0, 500);
         });
         setMonitors((prev) =>
           prev.map((m) => {

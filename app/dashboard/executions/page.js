@@ -23,6 +23,8 @@ import MetricCard from "@/components/MetricCard";
 import SearchInput from "@/components/SearchInput";
 import FilterTabs from "@/components/FilterTabs";
 import StatusBadge from "@/components/StatusBadge";
+import { executionService } from "@/services/executionService";
+import { monitorService } from "@/services/monitorService";
 import IntervalBadge from "@/components/IntervalBadge";
 import MethodBadge from "@/components/MethodBadge";
 import EmptyState from "@/components/EmptyState";
@@ -87,22 +89,90 @@ function ExecutionsContent() {
     setVisibleCount(12);
   }, [filter, search, monitorParam]);
 
-  // Find targeted schedule if ?monitor=... query param is present
-  const selectedSchedule = useMemo(() => {
-    if (!monitorParam) return null;
-    return monitors.find((m) => m.id === monitorParam) || null;
+  const [targetMonitor, setTargetMonitor] = useState(null);
+  const [historyLogs, setHistoryLogs] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Sync targeted schedule if ?monitor=... query param is present
+  useEffect(() => {
+    if (!monitorParam) {
+      setTargetMonitor(null);
+      return;
+    }
+    const found = monitors.find((m) => m.id === monitorParam);
+    if (found) {
+      setTargetMonitor(found);
+    } else {
+      monitorService
+        .getMonitor(monitorParam)
+        .then((m) => {
+          if (m) setTargetMonitor(m);
+        })
+        .catch(() => {});
+    }
   }, [monitorParam, monitors]);
 
-  // Filter logs based strictly on real monitor dispatches, status filter, and search query
-  const filteredLogs = useMemo(() => {
-    let result = [...logs];
-
-    // Filter to selected monitor if query param is set
-    if (selectedSchedule) {
-      result = result.filter(
-        (l) => l.monitorId === selectedSchedule.id || l.url === selectedSchedule.url
-      );
+  // Load complete history from engine/MySQL database whenever monitorParam changes
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchExecutionHistory() {
+      setIsLoadingHistory(true);
+      try {
+        const params = {
+          limit: 1000,
+        };
+        if (monitorParam) {
+          params.monitorId = monitorParam;
+        }
+        const data = await executionService.getExecutions(params);
+        if (!cancelled && data && Array.isArray(data.logs)) {
+          setHistoryLogs(data.logs);
+        }
+      } catch (err) {
+        console.warn("Failed to load execution history:", err);
+      } finally {
+        if (!cancelled) {
+          setIsLoadingHistory(false);
+        }
+      }
     }
+
+    fetchExecutionHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [monitorParam]);
+
+  const activeSchedule = targetMonitor || monitors.find((m) => m.id === monitorParam) || null;
+
+  // Merge loaded history logs from database with incoming live logs from SSE stream
+  const mergedLogs = useMemo(() => {
+    const map = new Map();
+    // 1. All historical records loaded from MySQL database
+    for (const l of historyLogs) {
+      if (l && l.id) map.set(l.id, l);
+    }
+    // 2. Incoming live SSE logs from dashboard context
+    for (const l of logs) {
+      if (!l || !l.id) continue;
+      if (monitorParam) {
+        const matchID = l.monitorId === monitorParam;
+        const matchURL = activeSchedule && l.url === activeSchedule.url;
+        if (!matchID && !matchURL) continue;
+      }
+      if (!map.has(l.id)) {
+        map.set(l.id, l);
+      }
+    }
+    const all = Array.from(map.values());
+    all.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+    return all;
+  }, [historyLogs, logs, monitorParam, activeSchedule]);
+
+  // Filter logs based on status filter and search query
+  const filteredLogs = useMemo(() => {
+    let result = [...mergedLogs];
 
     // Apply success/error filter
     if (filter === "success") {
@@ -122,19 +192,8 @@ function ExecutionsContent() {
       );
     }
 
-    // Safeguard deduplication to avoid any duplicate run entries or React key collisions
-    const seen = new Set();
-    const unique = [];
-    for (const item of result) {
-      const key = item.id || `${item.monitorId}-${item.timestamp}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        unique.push(item);
-      }
-    }
-
-    return unique;
-  }, [logs, selectedSchedule, filter, search]);
+    return result;
+  }, [mergedLogs, filter, search]);
 
   const hasMore = visibleCount < filteredLogs.length;
 
@@ -193,21 +252,21 @@ function ExecutionsContent() {
   }
 
   // Real Stats calculation based strictly on real logs & monitor data
-  const totalRuns = selectedSchedule
-    ? (typeof selectedSchedule.totalPings === "number" && selectedSchedule.totalPings > 0
-        ? selectedSchedule.totalPings
+  const totalRuns = activeSchedule
+    ? (typeof activeSchedule.totalPings === "number" && activeSchedule.totalPings > 0
+        ? Math.max(activeSchedule.totalPings, filteredLogs.length)
         : filteredLogs.length)
-    : logs.length;
+    : (filteredLogs.length > 0 ? filteredLogs.length : logs.length);
 
   const successCount = filteredLogs.filter((l) => l.ok).length;
-  const errorCount = selectedSchedule
-    ? (typeof selectedSchedule.failedPings === "number"
-        ? selectedSchedule.failedPings
+  const errorCount = activeSchedule
+    ? (typeof activeSchedule.failedPings === "number" && activeSchedule.failedPings > 0
+        ? Math.max(activeSchedule.failedPings, filteredLogs.filter((l) => !l.ok).length)
         : filteredLogs.filter((l) => !l.ok).length)
     : filteredLogs.filter((l) => !l.ok).length;
 
-  const successRate = selectedSchedule
-    ? selectedSchedule.uptime || (totalRuns > 0 ? `${(((totalRuns - errorCount) / totalRuns) * 100).toFixed(1)}%` : "100%")
+  const successRate = activeSchedule
+    ? activeSchedule.uptime || (totalRuns > 0 ? `${(((totalRuns - errorCount) / totalRuns) * 100).toFixed(1)}%` : "100%")
     : totalRuns > 0
     ? `${(((totalRuns - errorCount) / totalRuns) * 100).toFixed(1)}%`
     : "100%";
@@ -215,7 +274,7 @@ function ExecutionsContent() {
   const avgLatency =
     filteredLogs.length > 0
       ? Math.round(filteredLogs.reduce((acc, curr) => acc + (curr.latency || 0), 0) / filteredLogs.length)
-      : selectedSchedule?.lastLatency || 0;
+      : activeSchedule?.lastLatency || 0;
 
   const filterTabs = [
     { id: "all", label: "All Runs", count: filteredLogs.length },
@@ -226,7 +285,7 @@ function ExecutionsContent() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* CASE 1: SPECIFIC SCHEDULE HISTORY HEADER */}
-      {selectedSchedule ? (
+      {activeSchedule ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Link
@@ -250,27 +309,27 @@ function ExecutionsContent() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-2 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <MethodBadge method={selectedSchedule.method || "GET"} />
-                  <IntervalBadge interval={selectedSchedule.interval} label={selectedSchedule.intervalLabel || selectedSchedule.interval} />
-                  <StatusBadge status={selectedSchedule.status} />
+                  <MethodBadge method={activeSchedule.method || "GET"} />
+                  <IntervalBadge interval={activeSchedule.interval} label={activeSchedule.intervalLabel || activeSchedule.interval} />
+                  <StatusBadge status={activeSchedule.status} />
                 </div>
 
                 <h1 className="text-xl sm:text-2xl font-bold text-openboy-text-main tracking-tight truncate">
-                  {selectedSchedule.name}
+                  {activeSchedule.name}
                 </h1>
 
                 <div className="flex items-center gap-2 text-xs font-mono text-openboy-text-muted">
-                  <span className="truncate max-w-lg">{selectedSchedule.url}</span>
+                  <span className="truncate max-w-lg">{activeSchedule.url}</span>
                   <button
                     type="button"
-                    onClick={() => handleCopyUrl(selectedSchedule.url)}
+                    onClick={() => handleCopyUrl(activeSchedule.url)}
                     title="Copy URL"
                     className="text-openboy-text-muted hover:text-openboy-text-main transition-colors cursor-pointer shrink-0"
                   >
                     {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                   <a
-                    href={selectedSchedule.url}
+                    href={activeSchedule.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     title="Open in new tab"
@@ -285,7 +344,7 @@ function ExecutionsContent() {
               <div className="shrink-0">
                 <button
                   type="button"
-                  onClick={() => handleManualPing(selectedSchedule.id)}
+                  onClick={() => handleManualPing(activeSchedule.id)}
                   disabled={isPingingSchedule}
                   className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 border border-openboy-border shadow-xs hover:border-[#ffd600]/40"
                 >
@@ -347,15 +406,15 @@ function ExecutionsContent() {
         <MetricCard
           title="Total Recorded Runs"
           value={totalRuns.toLocaleString()}
-          subtitle={selectedSchedule ? "Lifetime schedule dispatches" : "Past 24-hour buffer"}
+          subtitle={activeSchedule ? "Lifetime schedule dispatches" : "Past 24-hour buffer"}
           icon={Clock}
         />
 
         <MetricCard
-          title={selectedSchedule ? "24h Uptime SLA" : "Successful Pings"}
-          value={selectedSchedule ? successRate : successCount}
+          title={activeSchedule ? "24h Uptime SLA" : "Successful Pings"}
+          value={activeSchedule ? successRate : successCount}
           valueColor="text-emerald-500 dark:text-emerald-400"
-          subtitle={selectedSchedule ? "High-availability SLA" : `${successRate} success rate`}
+          subtitle={activeSchedule ? "High-availability SLA" : `${successRate} success rate`}
           icon={Activity}
         />
 
@@ -371,7 +430,7 @@ function ExecutionsContent() {
           title="Average Ping Latency"
           value={`${avgLatency}ms`}
           valueColor="text-amber-600 dark:text-[#ffd600]"
-          subtitle={selectedSchedule ? "This endpoint response" : "Across all endpoints"}
+          subtitle={activeSchedule ? "This endpoint response" : "Across all endpoints"}
           icon={Layers}
         />
       </div>
@@ -390,7 +449,7 @@ function ExecutionsContent() {
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder={selectedSchedule ? "Filter run timestamps or traces..." : "Search by monitor or endpoint..."}
+          placeholder={activeSchedule ? "Filter run timestamps or traces..." : "Search by monitor or endpoint..."}
           containerClassName="w-full sm:w-72"
         />
       </div>
@@ -410,7 +469,9 @@ function ExecutionsContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-openboy-border">
-              {filteredLogs.length === 0 ? (
+              {isLoadingHistory && filteredLogs.length === 0 ? (
+                <TableSkeletonRows rows={8} />
+              ) : filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-openboy-text-muted">
                     <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">

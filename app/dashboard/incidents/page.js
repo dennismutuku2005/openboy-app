@@ -31,6 +31,7 @@ import { incidentService } from "@/services/incidentService";
 export default function IncidentsPage() {
   const { monitors, triggerPing, isLoadingAuth } = useDashboard();
   const [incidents, setIncidents] = useState([]);
+  const [isLoadingIncidents, setIsLoadingIncidents] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("all");
 
@@ -41,6 +42,7 @@ export default function IncidentsPage() {
   useEffect(() => {
     let mounted = true;
     async function loadIncidents() {
+      setIsLoadingIncidents(true);
       try {
         const data = await incidentService.getIncidents();
         if (mounted) {
@@ -48,6 +50,10 @@ export default function IncidentsPage() {
         }
       } catch {
         if (mounted) setIncidents([]);
+      } finally {
+        if (mounted) {
+          setIsLoadingIncidents(false);
+        }
       }
     }
     loadIncidents();
@@ -235,38 +241,42 @@ export default function IncidentsPage() {
       />
 
       {/* Metrics Row using Shareable MetricCard */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <MetricCard
-          title="Active Outages"
-          value={activeOutagesCount}
-          valueColor={activeOutagesCount > 0 ? "text-rose-500 dark:text-rose-400" : "text-emerald-500 dark:text-emerald-400"}
-          subtitle={activeOutagesCount > 0 ? "Requires engineer triage" : "All systems operational"}
-          icon={AlertTriangle}
-        />
+      {isLoadingIncidents ? (
+        <MetricCardsSkeleton count={4} />
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <MetricCard
+            title="Active Outages"
+            value={activeOutagesCount}
+            valueColor={activeOutagesCount > 0 ? "text-rose-500 dark:text-rose-400" : "text-emerald-500 dark:text-emerald-400"}
+            subtitle={activeOutagesCount > 0 ? "Requires engineer triage" : "All systems operational"}
+            icon={AlertTriangle}
+          />
 
-        <MetricCard
-          title="Mean Time to Recover (MTTR)"
-          value={mttrValue}
-          valueColor={resolvedIncidents.length > 0 ? "text-amber-500" : "text-openboy-text-muted"}
-          subtitle={mttrSubtitle}
-          icon={Clock}
-        />
+          <MetricCard
+            title="Mean Time to Recover (MTTR)"
+            value={mttrValue}
+            valueColor={resolvedIncidents.length > 0 ? "text-amber-500" : "text-openboy-text-muted"}
+            subtitle={mttrSubtitle}
+            icon={Clock}
+          />
 
-        <MetricCard
-          title="Overall Availability"
-          value={calculatedUptime}
-          valueColor={parseFloat(calculatedUptime) >= 99 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500"}
-          subtitle={uptimeSubtitle}
-          icon={CheckCircle2}
-        />
+          <MetricCard
+            title="Overall Availability"
+            value={calculatedUptime}
+            valueColor={parseFloat(calculatedUptime) >= 99 ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500"}
+            subtitle={uptimeSubtitle}
+            icon={CheckCircle2}
+          />
 
-        <MetricCard
-          title="Alert Destinations"
-          value={alertDestinationText}
-          subtitle={alertSubtitle}
-          icon={Bell}
-        />
-      </div>
+          <MetricCard
+            title="Alert Destinations"
+            value={alertDestinationText}
+            subtitle={alertSubtitle}
+            icon={Bell}
+          />
+        </div>
+      )}
 
       {/* Filter Row & Search Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-openboy-border pb-3">
@@ -302,7 +312,9 @@ export default function IncidentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-openboy-border font-mono">
-              {filteredIncidents.length === 0 ? (
+              {isLoadingIncidents ? (
+                <TableSkeletonRows rows={8} />
+              ) : filteredIncidents.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-openboy-text-muted">
                     <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />

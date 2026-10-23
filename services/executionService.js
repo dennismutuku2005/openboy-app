@@ -15,6 +15,9 @@ export const executionService = {
     if (params.offset) query.set("offset", params.offset);
     if (params.filter && params.filter !== "all") query.set("filter", params.filter);
     if (params.search) query.set("search", params.search);
+    if (params.monitorId || params.monitor_id || params.monitor) {
+      query.set("monitor_id", params.monitorId || params.monitor_id || params.monitor);
+    }
     const qs = query.toString() ? `?${query.toString()}` : "";
     return api.get(`/executions${qs}`);
   },
