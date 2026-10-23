@@ -1,5 +1,7 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_ENGINE_API_URL || "http://localhost:4040/api";
+const rawUrl =
+  process.env.NEXT_PUBLIC_ENGINE_API_URL || "https://openboyapi.cloudmint.co.ke/api";
+const cleanUrl = rawUrl.replace(/\/+$/, "");
+const API_BASE_URL = cleanUrl.endsWith("/api") ? cleanUrl : `${cleanUrl}/api`;
 
 /**
  * Generic API request wrapper that automatically attaches JWT Bearer token

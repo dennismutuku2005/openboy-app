@@ -1,9 +1,12 @@
 import { api } from "./apiClient";
 
-const STREAM_URL =
-  process.env.NEXT_PUBLIC_ENGINE_API_URL
-    ? `${process.env.NEXT_PUBLIC_ENGINE_API_URL}/stream`
-    : "http://localhost:4040/api/stream";
+const rawEngineUrl =
+  process.env.NEXT_PUBLIC_ENGINE_API_URL || "https://openboyapi.cloudmint.co.ke/api";
+const cleanEngineUrl = rawEngineUrl.replace(/\/+$/, "");
+const baseApiUrl = cleanEngineUrl.endsWith("/api")
+  ? cleanEngineUrl
+  : `${cleanEngineUrl}/api`;
+const STREAM_URL = `${baseApiUrl}/stream`;
 
 export const executionService = {
   /**
