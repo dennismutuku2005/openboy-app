@@ -3,7 +3,7 @@ import { api } from "./apiClient";
 const STREAM_URL =
   process.env.NEXT_PUBLIC_ENGINE_API_URL
     ? `${process.env.NEXT_PUBLIC_ENGINE_API_URL}/stream`
-    : "http://localhost:8080/api/stream";
+    : "http://localhost:4040/api/stream";
 
 export const executionService = {
   /**

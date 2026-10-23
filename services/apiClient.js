@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_ENGINE_API_URL || "http://localhost:8080/api";
+  process.env.NEXT_PUBLIC_ENGINE_API_URL || "http://localhost:4040/api";
 
 /**
  * Generic API request wrapper that automatically attaches JWT Bearer token
