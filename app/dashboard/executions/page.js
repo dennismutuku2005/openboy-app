@@ -15,6 +15,7 @@ import {
   Layers,
   ArrowUpRight,
   ShieldAlert,
+  Trash2,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { MetricCardsSkeleton, TableSkeleton, TableSkeletonRows } from "@/components/DashboardSkeletons";
@@ -71,6 +72,9 @@ function ExecutionsContent() {
   const [isRetesting, setIsRetesting] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [isPingingSchedule, setIsPingingSchedule] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Sync search param if updated via URL
   useEffect(() => {
@@ -79,19 +83,30 @@ function ExecutionsContent() {
     }
   }, [searchParam]);
 
-  // Infinite load: 12 per batch (Automatic on scroll)
-  const [visibleCount, setVisibleCount] = useState(12);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  // Initial visible batch of 40 rows fills desktop viewports with a natural scrollbar
+  const [visibleCount, setVisibleCount] = useState(40);
   const loadSentinelRef = useRef(null);
 
   // Reset pagination on filter or search
   useEffect(() => {
-    setVisibleCount(12);
+    setVisibleCount(40);
   }, [filter, search, monitorParam]);
 
   const [targetMonitor, setTargetMonitor] = useState(null);
   const [historyLogs, setHistoryLogs] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Keyboard shortcut to close modals
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setSelectedLog(null);
+        setShowClearModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Sync targeted schedule if ?monitor=... query param is present
   useEffect(() => {
@@ -112,37 +127,44 @@ function ExecutionsContent() {
     }
   }, [monitorParam, monitors]);
 
-  // Load complete history from engine/MySQL database whenever monitorParam changes
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchExecutionHistory() {
-      setIsLoadingHistory(true);
-      try {
-        const params = {
-          limit: 1000,
-        };
-        if (monitorParam) {
-          params.monitorId = monitorParam;
-        }
-        const data = await executionService.getExecutions(params);
-        if (!cancelled && data && Array.isArray(data.logs)) {
-          setHistoryLogs(data.logs);
-        }
-      } catch (err) {
-        console.warn("Failed to load execution history:", err);
-      } finally {
-        if (!cancelled) {
-          setIsLoadingHistory(false);
-        }
+  // Load complete history directly from MySQL database (bypassing any cache)
+  const fetchExecutionHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const params = {
+        limit: 1000,
+      };
+      if (monitorParam) {
+        params.monitorId = monitorParam;
       }
+      const data = await executionService.getExecutions(params);
+      if (data && Array.isArray(data.logs)) {
+        setHistoryLogs(data.logs);
+      }
+    } catch (err) {
+      console.warn("Failed to load execution history:", err);
+    } finally {
+      setIsLoadingHistory(false);
     }
+  };
 
+  useEffect(() => {
     fetchExecutionHistory();
-
-    return () => {
-      cancelled = true;
-    };
   }, [monitorParam]);
+
+  // Purge all execution records from MySQL
+  const handleClearLogs = async () => {
+    setIsClearing(true);
+    try {
+      await executionService.clearExecutions();
+      setHistoryLogs([]);
+      setShowClearModal(false);
+    } catch (err) {
+      console.error("Failed to clear execution logs:", err);
+    } finally {
+      setIsClearing(false);
+    }
+  };
 
   const activeSchedule = targetMonitor || monitors.find((m) => m.id === monitorParam) || null;
 
@@ -197,30 +219,31 @@ function ExecutionsContent() {
 
   const hasMore = visibleCount < filteredLogs.length;
 
-  // Seamless auto infinite scroll on scroll
+  // Seamless auto infinite scroll on scroll without stale closures
   useEffect(() => {
-    if (!hasMore || isLoadingMore) return;
+    const sentinel = loadSentinelRef.current;
+    if (!sentinel) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount((prev) => prev + 12);
-            setIsLoadingMore(false);
-          }, 120);
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => {
+            if (prev < filteredLogs.length) {
+              return prev + 40;
+            }
+            return prev;
+          });
         }
       },
-      { rootMargin: "150px" }
+      { rootMargin: "300px" }
     );
 
-    const sentinel = loadSentinelRef.current;
-    if (sentinel) observer.observe(sentinel);
+    observer.observe(sentinel);
 
     return () => {
-      if (sentinel) observer.unobserve(sentinel);
+      observer.disconnect();
     };
-  }, [hasMore, isLoadingMore]);
+  }, [filteredLogs.length]);
 
   const handleCopyUrl = (url) => {
     if (navigator?.clipboard) {
@@ -340,8 +363,35 @@ function ExecutionsContent() {
                 </div>
               </div>
 
-              {/* Ping action button */}
-              <div className="shrink-0">
+              {/* Actions */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  disabled={isRefreshing || isLoadingHistory}
+                  onClick={async () => {
+                    setIsRefreshing(true);
+                    await fetchExecutionHistory();
+                    setIsRefreshing(false);
+                  }}
+                  className="px-3 py-2 rounded-lg bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-openboy-border shadow-xs"
+                  title="Refresh latest records directly from MySQL database"
+                >
+                  <RotateCw className={`w-3.5 h-3.5 ${isRefreshing || isLoadingHistory ? "animate-spin" : ""}`} />
+                  <span>Refresh</span>
+                </button>
+
+                {filteredLogs.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowClearModal(true)}
+                    className="px-3 py-2 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    title="Purge all execution records"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Clear</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => handleManualPing(activeSchedule.id)}
@@ -397,7 +447,36 @@ function ExecutionsContent() {
         /* CASE 2: GENERAL EXECUTIONS PAGE HEADER */
         <PageHeader
           title="Executions & Run History"
-          subtitle="Normalized audit trail of every scheduled ping, HTTP response code, and execution latency."
+          subtitle="Normalized audit trail of every scheduled ping, HTTP response code, and execution latency directly from database."
+          actions={
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={isRefreshing || isLoadingHistory}
+                onClick={async () => {
+                  setIsRefreshing(true);
+                  await fetchExecutionHistory();
+                  setIsRefreshing(false);
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-semibold border border-openboy-border bg-openboy-surface hover:bg-openboy-surface-hover text-openboy-text-main flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Refresh latest records directly from MySQL database"
+              >
+                <RotateCw className={`w-3.5 h-3.5 ${isRefreshing || isLoadingHistory ? "animate-spin" : ""}`} />
+                <span>Refresh</span>
+              </button>
+              {filteredLogs.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowClearModal(true)}
+                  className="px-3 py-2 rounded-xl text-xs font-semibold border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Purge all execution records"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear History</span>
+                </button>
+              )}
+            </div>
+          }
         />
       )}
 
@@ -539,13 +618,46 @@ function ExecutionsContent() {
         <InfiniteScrollSentinel
           sentinelRef={loadSentinelRef}
           hasMore={hasMore}
-          isLoadingMore={isLoadingMore}
+          isLoadingMore={false}
         />
+
+        {/* Pagination & Load Controls */}
+        {filteredLogs.length > 0 && (
+          <div className="p-4 border-t border-openboy-border flex flex-col sm:flex-row items-center justify-between gap-3 bg-openboy-surface-subtle/50 text-xs text-openboy-text-muted">
+            <div>
+              Showing <span className="font-semibold text-openboy-text-main">{Math.min(visibleCount, filteredLogs.length).toLocaleString()}</span> of{" "}
+              <span className="font-semibold text-openboy-text-main">{filteredLogs.length.toLocaleString()}</span> execution records
+            </div>
+            {hasMore ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => Math.min(prev + 40, filteredLogs.length))}
+                  className="px-3.5 py-1.5 rounded-lg border border-openboy-border bg-openboy-surface hover:bg-openboy-surface-hover text-openboy-text-main font-semibold transition-colors cursor-pointer"
+                >
+                  Load 40 More Records
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount(filteredLogs.length)}
+                  className="px-3.5 py-1.5 rounded-lg border border-openboy-border bg-openboy-surface hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-openboy-text-main transition-colors cursor-pointer"
+                >
+                  Show All ({filteredLogs.length.toLocaleString()})
+                </button>
+              </div>
+            ) : filteredLogs.length > 40 ? (
+              <div className="text-[11px] text-openboy-text-muted">All {filteredLogs.length.toLocaleString()} records loaded</div>
+            ) : null}
+          </div>
+        )}
       </div>
 
       {/* Execution Detail Modal */}
       {selectedLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setSelectedLog(null)}
+        >
           <div
             className="bg-openboy-surface border border-openboy-border rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-scale-up space-y-5 p-5 sm:p-6 text-openboy-text-main transition-colors"
             onClick={(e) => e.stopPropagation()}
@@ -671,6 +783,59 @@ function ExecutionsContent() {
                 className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-openboy-text-muted hover:text-openboy-text-main bg-openboy-surface-subtle hover:bg-openboy-surface-hover rounded-lg transition-colors cursor-pointer border border-openboy-border"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Execution Logs Confirmation Modal */}
+      {showClearModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setShowClearModal(false)}
+        >
+          <div
+            className="w-full max-w-md bg-openboy-surface border border-openboy-border rounded-2xl shadow-2xl overflow-hidden p-6 text-openboy-text-main space-y-5 transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-openboy-text-main">Purge Execution Run History?</h3>
+                <p className="text-xs text-openboy-text-muted leading-relaxed">
+                  This will permanently delete all {filteredLogs.length.toLocaleString()} execution records and pings directly from MySQL database. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-openboy-border">
+              <button
+                type="button"
+                onClick={() => setShowClearModal(false)}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-openboy-border hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-openboy-text-main transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isClearing}
+                onClick={handleClearLogs}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-colors cursor-pointer flex items-center gap-2"
+              >
+                {isClearing ? (
+                  <>
+                    <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Purging from Database...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Purge Audit Trail</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

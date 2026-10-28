@@ -12,6 +12,8 @@ export async function apiRequest(endpoint, options = {}) {
 
   const headers = {
     "Content-Type": "application/json",
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache",
     ...(options.headers || {}),
   };
 
@@ -24,6 +26,7 @@ export async function apiRequest(endpoint, options = {}) {
   }
 
   const config = {
+    cache: "no-store",
     ...options,
     headers,
   };
