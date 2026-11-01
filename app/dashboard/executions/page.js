@@ -83,18 +83,20 @@ function ExecutionsContent() {
     }
   }, [searchParam]);
 
-  // Initial visible batch of 40 rows fills desktop viewports with a natural scrollbar
-  const [visibleCount, setVisibleCount] = useState(40);
+  const BATCH_SIZE = 12;
+  const [visibleCount, setVisibleCount] = useState(12);
   const loadSentinelRef = useRef(null);
 
   // Reset pagination on filter or search
   useEffect(() => {
-    setVisibleCount(40);
+    setVisibleCount(BATCH_SIZE);
   }, [filter, search, monitorParam]);
 
   const [targetMonitor, setTargetMonitor] = useState(null);
   const [historyLogs, setHistoryLogs] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [serverHasMore, setServerHasMore] = useState(true);
 
   // Keyboard shortcut to close modals
   useEffect(() => {
@@ -127,29 +129,49 @@ function ExecutionsContent() {
     }
   }, [monitorParam, monitors]);
 
-  // Load complete history directly from MySQL database (bypassing any cache)
-  const fetchExecutionHistory = async () => {
-    setIsLoadingHistory(true);
+  // Load executions in batches of 12 directly from MySQL database
+  const fetchExecutionHistory = async (offset = 0, isAppend = false) => {
+    if (offset === 0) {
+      setIsLoadingHistory(true);
+    } else {
+      setIsLoadingMore(true);
+    }
     try {
       const params = {
-        limit: 1000,
+        limit: BATCH_SIZE,
+        offset: offset,
       };
       if (monitorParam) {
         params.monitorId = monitorParam;
       }
       const data = await executionService.getExecutions(params);
-      if (data && Array.isArray(data.logs)) {
-        setHistoryLogs(data.logs);
+      const incoming = (data && Array.isArray(data.logs)) ? data.logs : [];
+      if (incoming.length < BATCH_SIZE) {
+        setServerHasMore(false);
+      } else {
+        setServerHasMore(true);
+      }
+      if (isAppend) {
+        setHistoryLogs((prev) => {
+          const map = new Map(prev.map((l) => [l.id, l]));
+          for (const item of incoming) {
+            if (item && item.id) map.set(item.id, item);
+          }
+          return Array.from(map.values());
+        });
+      } else {
+        setHistoryLogs(incoming);
       }
     } catch (err) {
       console.warn("Failed to load execution history:", err);
     } finally {
       setIsLoadingHistory(false);
+      setIsLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchExecutionHistory();
+    fetchExecutionHistory(0, false);
   }, [monitorParam]);
 
   // Purge all execution records from MySQL
@@ -217,25 +239,25 @@ function ExecutionsContent() {
     return result;
   }, [mergedLogs, filter, search]);
 
-  const hasMore = visibleCount < filteredLogs.length;
+  const hasMore = visibleCount < filteredLogs.length || serverHasMore;
 
-  // Seamless auto infinite scroll on scroll without stale closures
+  // Seamless auto infinite scroll in batches of 12
   useEffect(() => {
     const sentinel = loadSentinelRef.current;
     if (!sentinel) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => {
-            if (prev < filteredLogs.length) {
-              return prev + 40;
-            }
-            return prev;
-          });
+        if (entries[0].isIntersecting && !isLoadingHistory && !isLoadingMore) {
+          if (visibleCount < filteredLogs.length) {
+            setVisibleCount((prev) => prev + BATCH_SIZE);
+          } else if (serverHasMore) {
+            fetchExecutionHistory(historyLogs.length, true);
+            setVisibleCount((prev) => prev + BATCH_SIZE);
+          }
         }
       },
-      { rootMargin: "300px" }
+      { rootMargin: "250px" }
     );
 
     observer.observe(sentinel);
@@ -243,7 +265,7 @@ function ExecutionsContent() {
     return () => {
       observer.disconnect();
     };
-  }, [filteredLogs.length]);
+  }, [filteredLogs.length, visibleCount, serverHasMore, isLoadingHistory, isLoadingMore, historyLogs.length]);
 
   const handleCopyUrl = (url) => {
     if (navigator?.clipboard) {
@@ -632,10 +654,17 @@ function ExecutionsContent() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setVisibleCount((prev) => Math.min(prev + 40, filteredLogs.length))}
+                  onClick={() => {
+                    if (visibleCount < filteredLogs.length) {
+                      setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filteredLogs.length));
+                    } else if (serverHasMore) {
+                      fetchExecutionHistory(historyLogs.length, true);
+                      setVisibleCount((prev) => prev + BATCH_SIZE);
+                    }
+                  }}
                   className="px-3.5 py-1.5 rounded-lg border border-openboy-border bg-openboy-surface hover:bg-openboy-surface-hover text-openboy-text-main font-semibold transition-colors cursor-pointer"
                 >
-                  Load 40 More Records
+                  Load 12 More Records
                 </button>
                 <button
                   type="button"
@@ -645,7 +674,7 @@ function ExecutionsContent() {
                   Show All ({filteredLogs.length.toLocaleString()})
                 </button>
               </div>
-            ) : filteredLogs.length > 40 ? (
+            ) : filteredLogs.length > 12 ? (
               <div className="text-[11px] text-openboy-text-muted">All {filteredLogs.length.toLocaleString()} records loaded</div>
             ) : null}
           </div>
