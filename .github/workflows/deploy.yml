@@ -78,11 +78,11 @@ jobs:
 
       - name: Deploy Static Files to Remote Server
         env:
-          DROPLET_HOST: ${{ secrets.DROPLET_HOST || secrets.HOST }}
-          DROPLET_USERNAME: ${{ secrets.DROPLET_USERNAME || secrets.DROPLET_USER || secrets.SSH_USER || secrets.USERNAME || secrets.USER || 'root' }}
-          DROPLET_PASSWORD: ${{ secrets.DROPLET_PASSWORD || secrets.SSH_PASSWORD || secrets.PASSWORD }}
-          DROPLET_PORT: ${{ secrets.DROPLET_PORT || secrets.SSH_PORT || secrets.PORT || '22' }}
-          TARGET_DIR: ${{ secrets.DROPLET_APP_DIR || secrets.APP_TARGET_DIR || secrets.TARGET_DIR || '/var/www/openboy.cloudmint.co.ke/html' }}
+          DROPLET_HOST: ${{ secrets.DROPLET_HOST }}
+          DROPLET_USERNAME: ${{ secrets.DROPLET_USERNAME }}
+          DROPLET_PASSWORD: ${{ secrets.DROPLET_PASSWORD }}
+          DROPLET_PORT: ${{ secrets.DROPLET_PORT }}
+          TARGET_DIR: '/var/www/openboy.cloudmint.co.ke/html'
         run: |
           # 1. SSH Username: default to 'root' if empty or not set
           SSH_USER="${DROPLET_USERNAME:-root}"
