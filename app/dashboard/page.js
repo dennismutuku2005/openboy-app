@@ -110,7 +110,7 @@ export default function DashboardMainPage() {
       setCountdowns((prev) => {
         const next = { ...prev };
         monitors.forEach((m) => {
-          if (m.status === "active") {
+          if (m.status !== "paused") {
             const current = next[m.id] !== undefined ? next[m.id] : m.intervalSeconds;
             if (current <= 1) {
               next[m.id] = m.intervalSeconds;
@@ -193,6 +193,7 @@ export default function DashboardMainPage() {
     { id: "30s", label: "30s Standard", count: monitors.filter((m) => m.interval === "30s").length },
     { id: "10m", label: "10m Batchers", count: monitors.filter((m) => m.interval === "10m").length },
     { id: "failing", label: "Failing", count: monitors.filter((m) => m.status === "failing").length },
+    { id: "paused", label: "Paused", count: monitors.filter((m) => m.status === "paused").length },
   ];
 
   return (
@@ -350,7 +351,7 @@ export default function DashboardMainPage() {
                           : mon.intervalSeconds;
 
                       const isPinging = pingingId === mon.id;
-                      const isActive = mon.status === "active";
+                      const isPaused = mon.status === "paused";
 
                       return (
                         <tr
@@ -400,7 +401,7 @@ export default function DashboardMainPage() {
 
                           {/* Next Run Countdown */}
                           <td className="py-3.5 px-4 whitespace-nowrap font-mono text-openboy-text-muted">
-                            {isActive ? (
+                            {!isPaused ? (
                               <span className="text-openboy-text-main font-bold">
                                 in {countdown}s
                               </span>
@@ -460,10 +461,10 @@ export default function DashboardMainPage() {
                                   e.stopPropagation();
                                   togglePause(mon.id);
                                 }}
-                                title={isActive ? "Pause schedule" : "Resume schedule"}
+                                title={!isPaused ? "Pause schedule" : "Resume schedule"}
                                 className="p-1.5 rounded-md bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-openboy-text-main transition-colors cursor-pointer border border-openboy-border"
                               >
-                                {isActive ? (
+                                {!isPaused ? (
                                   <Pause className="w-3.5 h-3.5 text-openboy-text-muted" />
                                 ) : (
                                   <Play className="w-3.5 h-3.5 text-emerald-500" />

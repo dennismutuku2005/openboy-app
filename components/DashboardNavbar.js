@@ -24,7 +24,7 @@ export default function DashboardNavbar() {
     return () => clearInterval(interval);
   }, []);
 
-  const activeCount = monitors.filter((m) => m.status === "active").length;
+  const activeCount = monitors.filter((m) => m.status !== "paused").length;
   const userInitial = (currentUser?.name || currentUser?.username || "A").slice(0, 1).toUpperCase();
   const currentSection = pathname.replace("/dashboard", "").replace("/", "") || "schedules";
 

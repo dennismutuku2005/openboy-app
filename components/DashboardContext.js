@@ -204,14 +204,19 @@ export function DashboardProvider({ children }) {
         m.id === id
           ? {
               ...m,
-              status: m.status === "active" ? "paused" : "active",
+              status: m.status === "paused" ? "active" : "paused",
             }
           : m
       )
     );
 
     try {
-      await monitorService.toggleMonitor(id);
+      const updated = await monitorService.toggleMonitor(id);
+      if (updated && updated.status) {
+        setMonitors((prev) =>
+          prev.map((m) => (m.id === id ? { ...m, status: updated.status } : m))
+        );
+      }
     } catch (err) {
       console.error("Failed to toggle monitor:", err);
     }

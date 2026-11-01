@@ -91,7 +91,7 @@ export default function UptimePage() {
     );
   }
 
-  const activeEndpointsCount = monitors.filter((m) => m.status === "active").length;
+  const activeEndpointsCount = monitors.filter((m) => m.status !== "paused").length;
 
   return (
     <div className="space-y-6 animate-fade-in">
