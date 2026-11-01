@@ -1,0 +1,162 @@
+name: Deploy OpenBoy App
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ============================================================================
+  # 1. BUILD JOB
+  # Installs dependencies and builds Next.js static export ('out' directory)
+  # ============================================================================
+  build:
+    name: Build Next.js Static Export
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Build Next.js Static Export
+        run: npm run build
+
+      - name: Verify static export output
+        run: |
+          if [ ! -d "out" ] || [ ! -f "out/index.html" ]; then
+            echo "::error::Static export build failed: out/index.html was not generated!"
+            exit 1
+          fi
+          echo "Static export verified successfully! Total files generated:"
+          find out -type f | wc -l
+
+      - name: Package Static Files
+        run: |
+          tar -czf openboy-app-static.tar.gz -C out .
+
+      - name: Upload Static Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openboy-app-static
+          path: openboy-app-static.tar.gz
+          retention-days: 1
+
+  # ============================================================================
+  # 2. DEPLOY JOB (Uses native OpenSSH + sshpass for Linux server compatibility)
+  # ============================================================================
+  deploy:
+    name: Deploy Static Files to Linux Server
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download Compiled Static Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openboy-app-static
+          path: ./
+
+      - name: Install OpenSSH Client & sshpass
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq sshpass openssh-client
+
+      - name: Deploy Static Files to Remote Server
+        env:
+          DROPLET_HOST: ${{ secrets.DROPLET_HOST || secrets.HOST }}
+          DROPLET_USERNAME: ${{ secrets.DROPLET_USERNAME || secrets.DROPLET_USER || secrets.SSH_USER || secrets.USERNAME || secrets.USER || 'root' }}
+          DROPLET_PASSWORD: ${{ secrets.DROPLET_PASSWORD || secrets.SSH_PASSWORD || secrets.PASSWORD }}
+          DROPLET_PORT: ${{ secrets.DROPLET_PORT || secrets.SSH_PORT || secrets.PORT || '22' }}
+          TARGET_DIR: ${{ secrets.DROPLET_APP_DIR || secrets.APP_TARGET_DIR || secrets.TARGET_DIR || '/var/www/openboy.cloudmint.co.ke/html' }}
+        run: |
+          # 1. SSH Username: default to 'root' if empty or not set
+          SSH_USER="${DROPLET_USERNAME:-root}"
+          if [ -z "$SSH_USER" ] || [ "$SSH_USER" = "" ]; then
+            SSH_USER="root"
+          fi
+
+          # 2. SSH Server port: standard SSH is port 22
+          SSH_PORT="${DROPLET_PORT:-22}"
+          if [ "$SSH_PORT" = "4040" ] || [ -z "$SSH_PORT" ]; then
+            SSH_PORT=22
+          fi
+
+          # 3. Validate required secrets
+          if [ -z "$DROPLET_HOST" ]; then
+            echo "::error::Secret DROPLET_HOST is empty! Please add DROPLET_HOST to your GitHub Repository Secrets."
+            exit 1
+          fi
+
+          if [ -z "$DROPLET_PASSWORD" ]; then
+            echo "::error::Secret DROPLET_PASSWORD is empty! Please add DROPLET_PASSWORD to your GitHub Repository Secrets."
+            exit 1
+          fi
+
+          echo "==> Preparing connection to ${SSH_USER}@${DROPLET_HOST} on SSH port ${SSH_PORT}..."
+          export SSHPASS="$DROPLET_PASSWORD"
+
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=30 -o ServerAliveInterval=15 -o PreferredAuthentications=password,keyboard-interactive -o PubkeyAuthentication=no"
+
+          echo "==> Transferring static files archive and PM2 configuration to server via SCP..."
+          sshpass -e scp -P "$SSH_PORT" $SSH_OPTS openboy-app-static.tar.gz ecosystem.config.js "${SSH_USER}@${DROPLET_HOST}:/tmp/"
+
+          echo "==> Extracting static files and hosting on server..."
+          sshpass -e ssh -p "$SSH_PORT" $SSH_OPTS "${SSH_USER}@${DROPLET_HOST}" "bash -s" -- "$TARGET_DIR" << 'EOF'
+            set -e
+
+            DEPLOY_DIR="${1:-/var/www/openboy.cloudmint.co.ke/html}"
+
+            echo "==> Deploying OpenBoy App static files into: $DEPLOY_DIR"
+            mkdir -p "$DEPLOY_DIR"
+
+            # Clean previous deployment in destination (preserving target directory)
+            find "$DEPLOY_DIR" -mindepth 1 -not -name "ecosystem.config.js" -delete 2>/dev/null || rm -rf "${DEPLOY_DIR:?}"/*
+
+            # Unpack new static files
+            tar -xzf /tmp/openboy-app-static.tar.gz -C "$DEPLOY_DIR"
+            rm -f /tmp/openboy-app-static.tar.gz
+
+            # Place ecosystem.config.js
+            if [ -f "/tmp/ecosystem.config.js" ]; then
+              mv /tmp/ecosystem.config.js "$DEPLOY_DIR/ecosystem.config.js"
+            fi
+
+            # Apply read & execute permissions for web server (Nginx/Apache/PM2)
+            chmod -R 755 "$DEPLOY_DIR"
+
+            # Reload Nginx if active
+            if command -v nginx &> /dev/null && systemctl is-active --quiet nginx 2>/dev/null; then
+              echo "==> Reloading Nginx web server..."
+              sudo nginx -t && sudo systemctl reload nginx || true
+            fi
+
+            # Manage PM2 if PM2 is used/installed
+            if command -v pm2 &> /dev/null; then
+              if pm2 describe openboy-app &> /dev/null; then
+                echo "==> Restarting existing PM2 process 'openboy-app'..."
+                pm2 restart openboy-app || true
+              fi
+              pm2 save || true
+            fi
+
+            echo "================================================================="
+            echo " SUCCESS: OpenBoy App static export successfully deployed to: $DEPLOY_DIR"
+            echo " Total static files deployed: $(find "$DEPLOY_DIR" -type f | wc -l)"
+            echo " URL: https://openboy.cloudmint.co.ke"
+            echo "================================================================="
+          EOF
