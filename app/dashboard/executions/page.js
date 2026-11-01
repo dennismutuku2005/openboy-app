@@ -719,8 +719,8 @@ function ExecutionsContent() {
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <StatusBadge
-                    status={selectedLog.ok ? 200 : selectedLog.status || 500}
-                    label={`${selectedLog.status || (selectedLog.ok ? 200 : 500)} ${selectedLog.statusText || (selectedLog.ok ? "OK" : "Error")}`}
+                    status={selectedLog.ok ? 200 : selectedLog.status || "error"}
+                    label={`${selectedLog.ok ? (selectedLog.status || 200) : (selectedLog.status || "ERR")} ${selectedLog.statusText || (selectedLog.ok ? "OK" : "Error")}`}
                   />
                   <MethodBadge method={selectedLog.method || "GET"} />
                 </div>
@@ -799,7 +799,7 @@ function ExecutionsContent() {
                 Diagnostic Trace & Headers
               </span>
               <div className="p-3.5 rounded-xl bg-openboy-surface-subtle border border-openboy-border font-mono text-[11px] text-openboy-text-muted space-y-1 max-h-40 overflow-y-auto">
-                <div>status: {selectedLog.status || 200} ({selectedLog.statusText || "OK"})</div>
+                <div>status: {selectedLog.ok ? (selectedLog.status || 200) : (selectedLog.status || "ERR")} ({selectedLog.statusText || (selectedLog.ok ? "OK" : "Error")})</div>
                 <div>latency_ms: {selectedLog.latency}</div>
                 <div>server: cloudflare-nginx/1.25.4</div>
                 <div>content-type: application/json; charset=utf-8</div>
