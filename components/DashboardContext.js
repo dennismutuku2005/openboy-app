@@ -188,6 +188,7 @@ export function DashboardProvider({ children }) {
     if (deleteDialog.monitor) {
       const id = deleteDialog.monitor.id;
       setMonitors((prev) => prev.filter((m) => m.id !== id));
+      setLogs((prev) => prev.filter((l) => l.monitorId !== id && l.monitor_id !== id));
       try {
         await monitorService.deleteMonitor(id);
       } catch (err) {
