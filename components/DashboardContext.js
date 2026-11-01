@@ -44,58 +44,45 @@ export function DashboardProvider({ children }) {
         return;
       }
 
-      // Load user profile via service
+      // Parallelize profile and monitors loading
       try {
-        const profile = await authService.getMe();
-        if (isMounted && profile) {
-          setCurrentUser(profile);
+        const [profileRes, monitorsRes] = await Promise.allSettled([
+          authService.getMe(),
+          monitorService.getMonitors(),
+        ]);
+
+        if (isMounted && profileRes.status === "fulfilled" && profileRes.value) {
+          setCurrentUser(profileRes.value);
           try {
-            localStorage.setItem("openboy_user", JSON.stringify(profile));
+            localStorage.setItem("openboy_user", JSON.stringify(profileRes.value));
           } catch {}
+        } else if (profileRes.status === "rejected") {
+          const msg = String(profileRes.reason?.message || "");
+          if (
+            msg.includes("401") ||
+            msg.includes("Unauthorized") ||
+            msg.includes("expired") ||
+            msg.includes("Authentication required")
+          ) {
+            authService.logout();
+            return;
+          }
+          console.warn("Could not sync profile from engine:", msg);
+        }
+
+        if (isMounted) {
+          if (monitorsRes.status === "fulfilled" && Array.isArray(monitorsRes.value)) {
+            setMonitors(monitorsRes.value);
+          } else {
+            setMonitors([]);
+          }
         }
       } catch (err) {
-        // If JWT token is rejected (401 / expired), purge session and redirect
-        const msg = String(err?.message || "");
-        if (msg.includes("401") || msg.includes("Unauthorized") || msg.includes("expired") || msg.includes("Authentication required")) {
-          authService.logout();
-          return;
-        }
-        // If temporary network/server error, keep existing cached user session
-        console.warn("Could not sync profile from engine:", msg);
-      }
-
-      // Load real monitors from service
-      try {
-        const remoteMonitors = await monitorService.getMonitors();
+        console.error("Initialization error:", err);
+      } finally {
         if (isMounted) {
-          setMonitors(Array.isArray(remoteMonitors) ? remoteMonitors : []);
+          setIsLoadingAuth(false);
         }
-      } catch {
-        if (isMounted) setMonitors([]);
-      }
-
-      // Load real execution logs from service
-      try {
-        const logsData = await executionService.getExecutions({ limit: 200 });
-        if (isMounted) {
-          const rawLogs = logsData?.logs && Array.isArray(logsData.logs) ? logsData.logs : [];
-          const seen = new Set();
-          const cleanLogs = [];
-          for (const item of rawLogs) {
-            if (item && item.id) {
-              if (seen.has(item.id)) continue;
-              seen.add(item.id);
-            }
-            cleanLogs.push(item);
-          }
-          setLogs(cleanLogs);
-        }
-      } catch {
-        if (isMounted) setLogs([]);
-      }
-
-      if (isMounted) {
-        setIsLoadingAuth(false);
       }
     }
 
@@ -149,6 +136,21 @@ export function DashboardProvider({ children }) {
 
   const logout = () => {
     authService.logout();
+  };
+
+  const fetchLogs = async (limit = 25) => {
+    try {
+      const data = await executionService.getExecutions({ limit });
+      if (data && Array.isArray(data.logs)) {
+        setLogs((prev) => {
+          const seen = new Set(prev.map((l) => l.id));
+          const fresh = data.logs.filter((l) => !seen.has(l.id));
+          return [...fresh, ...prev].slice(0, 500);
+        });
+      }
+    } catch (e) {
+      console.warn("Could not fetch execution logs:", e);
+    }
   };
 
   const saveMonitors = (updated) => {
@@ -306,6 +308,7 @@ export function DashboardProvider({ children }) {
         activeFilter,
         currentUser,
         isLoadingAuth,
+        fetchLogs,
         deleteDialog,
         pingResultDialog,
         isMobileSidebarOpen,

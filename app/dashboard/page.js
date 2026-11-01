@@ -72,6 +72,7 @@ export default function DashboardMainPage() {
   const {
     monitors,
     logs,
+    fetchLogs,
     openCreateModal,
     promptDeleteMonitor,
     togglePause,
@@ -85,6 +86,13 @@ export default function DashboardMainPage() {
   const [pingingId, setPingingId] = useState(null);
   const [countdowns, setCountdowns] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch lightweight logs on-demand only if user opens Live Logs or Errors tab
+  useEffect(() => {
+    if ((activeTab === "logs" || activeTab === "errors") && logs.length === 0 && fetchLogs) {
+      fetchLogs(25);
+    }
+  }, [activeTab, logs.length, fetchLogs]);
 
   // Infinite load: 12 per batch
   const [visibleCount, setVisibleCount] = useState(12);
