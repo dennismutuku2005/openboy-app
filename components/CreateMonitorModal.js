@@ -18,7 +18,7 @@ export default function CreateMonitorModal() {
   const [headers, setHeaders] = useState("");
   const [body, setBody] = useState("");
   const [expectedStatus, setExpectedStatus] = useState("200");
-  const [timeout, setTimeoutVal] = useState("10");
+  const [timeout, setTimeoutVal] = useState("30");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -127,7 +127,7 @@ export default function CreateMonitorModal() {
       headers: headersMap,
       body: body.trim() || "",
       expectedStatus: parseInt(expectedStatus) || 200,
-      timeout: parseInt(timeout) || 10,
+      timeout: parseInt(timeout) || 30,
     };
 
     setIsSubmitting(true);
