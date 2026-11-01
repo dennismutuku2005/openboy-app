@@ -26,6 +26,18 @@ export const executionService = {
   },
 
   /**
+   * Retrieves aggregated KPI execution statistics directly from database.
+   */
+  async getExecutionStats(params = {}) {
+    const query = new URLSearchParams();
+    if (params.monitorId || params.monitor_id || params.monitor) {
+      query.set("monitor_id", params.monitorId || params.monitor_id || params.monitor);
+    }
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return api.get(`/executions/stats${qs}`);
+  },
+
+  /**
    * Clears all execution audit logs.
    */
   async clearExecutions() {

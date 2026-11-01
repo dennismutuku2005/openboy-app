@@ -97,6 +97,7 @@ function ExecutionsContent() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [serverHasMore, setServerHasMore] = useState(true);
+  const [execStats, setExecStats] = useState(null);
 
   // Keyboard shortcut to close modals
   useEffect(() => {
@@ -128,6 +129,20 @@ function ExecutionsContent() {
         .catch(() => {});
     }
   }, [monitorParam, monitors]);
+
+  // Dedicated execution statistics loaded directly from /api/executions/stats
+  const fetchExecutionStats = async () => {
+    try {
+      const data = await executionService.getExecutionStats({
+        monitorId: monitorParam || undefined,
+      });
+      if (data) {
+        setExecStats(data);
+      }
+    } catch (err) {
+      console.warn("Failed to load execution stats:", err);
+    }
+  };
 
   // Load executions in batches of 12 directly from MySQL database
   const fetchExecutionHistory = async (offset = 0, isAppend = false) => {
@@ -172,6 +187,7 @@ function ExecutionsContent() {
 
   useEffect(() => {
     fetchExecutionHistory(0, false);
+    fetchExecutionStats();
   }, [monitorParam]);
 
   // Purge all execution records from MySQL
@@ -180,6 +196,13 @@ function ExecutionsContent() {
     try {
       await executionService.clearExecutions();
       setHistoryLogs([]);
+      setExecStats({
+        totalRuns: 0,
+        successCount: 0,
+        errorCount: 0,
+        successRate: "100.0%",
+        avgLatencyMs: 0,
+      });
       setShowClearModal(false);
     } catch (err) {
       console.error("Failed to clear execution logs:", err);
@@ -296,30 +319,27 @@ function ExecutionsContent() {
     );
   }
 
-  // Real Stats calculation based strictly on real logs & monitor data
-  const totalRuns = activeSchedule
-    ? (typeof activeSchedule.totalPings === "number" && activeSchedule.totalPings > 0
-        ? Math.max(activeSchedule.totalPings, filteredLogs.length)
-        : filteredLogs.length)
-    : (filteredLogs.length > 0 ? filteredLogs.length : logs.length);
+  // Dedicated Aggregated Stats loaded directly from /api/executions/stats
+  const totalRuns = execStats?.totalRuns ?? (
+    activeSchedule?.totalPings && activeSchedule.totalPings > 0
+      ? activeSchedule.totalPings
+      : filteredLogs.length
+  );
 
-  const successCount = filteredLogs.filter((l) => l.ok).length;
-  const errorCount = activeSchedule
-    ? (typeof activeSchedule.failedPings === "number" && activeSchedule.failedPings > 0
-        ? Math.max(activeSchedule.failedPings, filteredLogs.filter((l) => !l.ok).length)
-        : filteredLogs.filter((l) => !l.ok).length)
-    : filteredLogs.filter((l) => !l.ok).length;
+  const successCount = execStats?.successCount ?? filteredLogs.filter((l) => l.ok).length;
+  const errorCount = execStats?.errorCount ?? (
+    activeSchedule?.failedPings !== undefined
+      ? activeSchedule.failedPings
+      : filteredLogs.filter((l) => !l.ok).length
+  );
 
-  const successRate = activeSchedule
-    ? activeSchedule.uptime || (totalRuns > 0 ? `${(((totalRuns - errorCount) / totalRuns) * 100).toFixed(1)}%` : "100%")
-    : totalRuns > 0
-    ? `${(((totalRuns - errorCount) / totalRuns) * 100).toFixed(1)}%`
-    : "100%";
+  const successRate = execStats?.successRate ?? (
+    activeSchedule?.uptime || (totalRuns > 0 ? `${(((totalRuns - errorCount) / totalRuns) * 100).toFixed(1)}%` : "100%")
+  );
 
-  const avgLatency =
-    filteredLogs.length > 0
-      ? Math.round(filteredLogs.reduce((acc, curr) => acc + (curr.latency || 0), 0) / filteredLogs.length)
-      : activeSchedule?.lastLatency || 0;
+  const avgLatency = execStats?.avgLatencyMs ?? (
+    activeSchedule?.lastLatency || (filteredLogs.length > 0 ? Math.round(filteredLogs.reduce((acc, curr) => acc + (curr.latency || 0), 0) / filteredLogs.length) : 0)
+  );
 
   const filterTabs = [
     { id: "all", label: "All Runs", count: filteredLogs.length },
@@ -477,7 +497,10 @@ function ExecutionsContent() {
                 disabled={isRefreshing || isLoadingHistory}
                 onClick={async () => {
                   setIsRefreshing(true);
-                  await fetchExecutionHistory();
+                  await Promise.all([
+                    fetchExecutionHistory(0, false),
+                    fetchExecutionStats(),
+                  ]);
                   setIsRefreshing(false);
                 }}
                 className="px-3 py-2 rounded-xl text-xs font-semibold border border-openboy-border bg-openboy-surface hover:bg-openboy-surface-hover text-openboy-text-main flex items-center gap-1.5 transition-colors cursor-pointer"

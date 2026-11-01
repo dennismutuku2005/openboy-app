@@ -12,11 +12,26 @@ import SearchInput from "@/components/SearchInput";
 import StatusBadge from "@/components/StatusBadge";
 import IntervalBadge from "@/components/IntervalBadge";
 import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
+import { executionService } from "@/services/executionService";
 
 export default function UptimePage() {
   const router = useRouter();
   const { monitors, logs, isLoadingAuth } = useDashboard();
   const [search, setSearch] = useState("");
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    executionService
+      .getSystemStats()
+      .then((data) => {
+        if (mounted && data) setStats(data);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Infinite load: 12 per batch (Automatic on scroll)
   const [visibleCount, setVisibleCount] = useState(12);
@@ -90,15 +105,15 @@ export default function UptimePage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <MetricCard
           title="Total Endpoints"
-          value={monitors.length}
-          trend={`${activeEndpointsCount} active now`}
+          value={stats?.totalMonitors ?? monitors.length}
+          trend={`${stats?.activeMonitors ?? activeEndpointsCount} active now`}
           trendType="success"
           icon={Server}
         />
 
         <MetricCard
           title="Avg. Response Time"
-          value="38ms"
+          value={`${stats?.avgLatencyMs ?? 0}ms`}
           valueColor="text-amber-600 dark:text-[#ffd600]"
           subtitle="Past 24-hour average"
           icon={Clock}
@@ -106,15 +121,15 @@ export default function UptimePage() {
 
         <MetricCard
           title="Incident Rate (30d)"
-          value="0.02%"
-          trend="High availability"
+          value={stats?.successRate ? `${Math.max(0, 100 - parseFloat(stats.successRate || "100")).toFixed(2)}%` : "0.00%"}
+          trend={stats?.successRate ? `${stats.successRate} availability` : "High availability"}
           trendType="success"
           icon={Activity}
         />
 
         <MetricCard
           title="Total Pings Handled"
-          value="48,290"
+          value={(stats?.totalRuns ?? 0).toLocaleString()}
           subtitle="Automatic cron cycles"
           icon={CheckCircle2}
         />
