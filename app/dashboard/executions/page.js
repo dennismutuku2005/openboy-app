@@ -100,6 +100,10 @@ function ExecutionsContent() {
   const [execStats, setExecStats] = useState(null);
   const [latencyStats, setLatencyStats] = useState(null);
   const [isLoadingLatency, setIsLoadingLatency] = useState(false);
+  const [timelineData, setTimelineData] = useState([]);
+  const [timelineTotal, setTimelineTotal] = useState(0);
+  const [timelineSLA, setTimelineSLA] = useState(null);
+  const [isLoadingTimeline, setIsLoadingTimeline] = useState(false);
 
   // Keyboard shortcut to close modals
   useEffect(() => {
@@ -163,6 +167,30 @@ function ExecutionsContent() {
     }
   };
 
+  // Dedicated Timeline API - loads real-time run blocks directly from database without using the paginated table list
+  const fetchTimeline = async () => {
+    setIsLoadingTimeline(true);
+    try {
+      const data = await executionService.getTimeline({
+        monitorId: monitorParam || undefined,
+        limit: 30,
+      });
+      if (data && Array.isArray(data.timeline)) {
+        setTimelineData(data.timeline);
+        if (data.totalRecorded !== undefined) {
+          setTimelineTotal(data.totalRecorded);
+        }
+        if (data.sla) {
+          setTimelineSLA(data.sla);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to load execution timeline:", err);
+    } finally {
+      setIsLoadingTimeline(false);
+    }
+  };
+
   // Load executions in batches of 12 directly from MySQL database
   const fetchExecutionHistory = async (offset = 0, isAppend = false) => {
     if (offset === 0) {
@@ -208,6 +236,7 @@ function ExecutionsContent() {
     fetchExecutionHistory(0, false);
     fetchExecutionStats();
     fetchLatencyStats();
+    fetchTimeline();
   }, [monitorParam]);
 
   // Purge all execution records from MySQL
@@ -230,6 +259,8 @@ function ExecutionsContent() {
         maxLatencyMs: 0,
         totalSamples: 0,
       });
+      setTimelineData([]);
+      setTimelineTotal(0);
       setShowClearModal(false);
     } catch (err) {
       console.error("Failed to clear execution logs:", err);
@@ -239,6 +270,31 @@ function ExecutionsContent() {
   };
 
   const activeSchedule = targetMonitor || monitors.find((m) => m.id === monitorParam) || null;
+
+  // Real-time timeline updater: pushes incoming live SSE runs into timeline without touching paginated execution table
+  const latestLiveLog = logs[0];
+  useEffect(() => {
+    if (!latestLiveLog || !latestLiveLog.id) return;
+    const matchID = !monitorParam || latestLiveLog.monitorId === monitorParam;
+    const matchURL = activeSchedule && latestLiveLog.url === activeSchedule.url;
+    if (!matchID && !matchURL) return;
+
+    setTimelineData((prev) => {
+      if (prev.some((item) => item.id === latestLiveLog.id)) return prev;
+      const newItem = {
+        id: latestLiveLog.id,
+        monitorId: latestLiveLog.monitorId,
+        status: latestLiveLog.status,
+        latency: latestLiveLog.latency,
+        ok: latestLiveLog.ok,
+        timestamp: latestLiveLog.timestamp || new Date().toISOString(),
+        formattedTime: latestLiveLog.formattedTime || "Just now",
+      };
+      const next = [...prev, newItem];
+      return next.slice(-30);
+    });
+    setTimelineTotal((prev) => prev + 1);
+  }, [latestLiveLog, monitorParam, activeSchedule]);
 
   // Merge loaded history logs from database with incoming live logs from SSE stream
   const mergedLogs = useMemo(() => {
@@ -332,6 +388,7 @@ function ExecutionsContent() {
       setIsPingingSchedule(false);
       fetchExecutionStats();
       fetchLatencyStats();
+      fetchTimeline();
     }, 600);
   };
 
@@ -451,6 +508,7 @@ function ExecutionsContent() {
                       fetchExecutionHistory(0, false),
                       fetchExecutionStats(),
                       fetchLatencyStats(),
+                      fetchTimeline(),
                     ]);
                     setIsRefreshing(false);
                   }}
@@ -487,35 +545,48 @@ function ExecutionsContent() {
               </div>
             </div>
 
-            {/* Execution History Bar */}
+            {/* Real-time Execution History Timeline (from dedicated API, independent of table logs list) */}
             <div className="space-y-1.5 pt-2 border-t border-openboy-border">
               <div className="flex items-center justify-between text-[11px] font-mono text-openboy-text-muted">
-                <span>Recent Run Timeline ({filteredLogs.length} total recorded)</span>
-                <span className="text-emerald-500 dark:text-emerald-400 font-semibold">{successRate} SLA</span>
+                <span>
+                  Recent Run Timeline (
+                  {(timelineTotal > 0 ? timelineTotal : (activeSchedule?.totalPings || 0)).toLocaleString()} total recorded
+                  )
+                </span>
+                <span className="text-emerald-500 dark:text-emerald-400 font-semibold">
+                  {timelineSLA || successRate} SLA
+                </span>
               </div>
               <div className="flex items-center gap-1 h-5">
-                {Array.from({ length: 24 }).map((_, i) => {
-                  const emptyCount = Math.max(0, 24 - filteredLogs.length);
+                {Array.from({ length: 30 }).map((_, i) => {
+                  const emptyCount = Math.max(0, 30 - timelineData.length);
                   if (i < emptyCount) {
                     return (
                       <div
-                        key={i}
+                        key={`empty-${i}`}
                         title="Awaiting next scheduled dispatch"
                         className="flex-1 h-full rounded-2xs bg-openboy-surface-subtle border border-openboy-border/40"
                       />
                     );
                   }
-                  const logIndex = i - emptyCount;
-                  const logItem = filteredLogs[filteredLogs.length - 1 - logIndex];
-                  const isOk = logItem ? logItem.ok : true;
+                  const itemIndex = i - emptyCount;
+                  const item = timelineData[itemIndex];
+                  const isOk = item ? item.ok : true;
                   return (
                     <div
-                      key={i}
-                      title={logItem ? `Run: ${logItem.status} (${logItem.latency}ms) at ${formatLogTime(logItem.timestamp, logItem.formattedTime)}` : "Dispatched"}
-                      className={`flex-1 h-full rounded-2xs transition-opacity hover:opacity-100 ${
+                      key={item?.id || `tl-${i}`}
+                      title={
+                        item
+                          ? `Run: ${item.status} (${item.latency}ms) at ${formatLogTime(
+                              item.timestamp,
+                              item.formattedTime
+                            )}`
+                          : "Dispatched"
+                      }
+                      className={`flex-1 h-full rounded-2xs transition-all hover:scale-y-110 hover:opacity-100 ${
                         isOk
                           ? "bg-emerald-500/85 hover:bg-emerald-400 opacity-80"
-                          : "bg-rose-500 opacity-90"
+                          : "bg-rose-500 opacity-90 hover:bg-rose-400"
                       }`}
                     />
                   );
@@ -540,6 +611,7 @@ function ExecutionsContent() {
                     fetchExecutionHistory(0, false),
                     fetchExecutionStats(),
                     fetchLatencyStats(),
+                    fetchTimeline(),
                   ]);
                   setIsRefreshing(false);
                 }}

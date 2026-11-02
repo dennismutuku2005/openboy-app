@@ -27,6 +27,13 @@ export const monitorService = {
   },
 
   /**
+   * Retrieves dedicated real-time timeline blocks for a specific monitor.
+   */
+  async getMonitorTimeline(id, limit = 30) {
+    return api.get(`/monitors/${id}/timeline?limit=${limit}`);
+  },
+
+  /**
    * Creates a new health monitor.
    */
   async createMonitor(monitorData) {

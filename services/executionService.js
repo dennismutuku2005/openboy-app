@@ -50,6 +50,19 @@ export const executionService = {
   },
 
   /**
+   * Retrieves dedicated real-time timeline blocks directly from database without fetching the execution list.
+   */
+  async getTimeline(params = {}) {
+    const query = new URLSearchParams();
+    if (params.monitorId || params.monitor_id || params.monitor) {
+      query.set("monitor_id", params.monitorId || params.monitor_id || params.monitor);
+    }
+    if (params.limit) query.set("limit", params.limit);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return api.get(`/executions/timeline${qs}`);
+  },
+
+  /**
    * Clears all execution audit logs.
    */
   async clearExecutions() {
