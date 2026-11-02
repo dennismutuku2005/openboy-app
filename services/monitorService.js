@@ -20,6 +20,13 @@ export const monitorService = {
   },
 
   /**
+   * Retrieves dedicated latency metrics for a specific monitor.
+   */
+  async getMonitorLatency(id) {
+    return api.get(`/monitors/${id}/latency`);
+  },
+
+  /**
    * Creates a new health monitor.
    */
   async createMonitor(monitorData) {

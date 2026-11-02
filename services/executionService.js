@@ -38,6 +38,18 @@ export const executionService = {
   },
 
   /**
+   * Retrieves dedicated latency metrics directly from database without fetching execution logs.
+   */
+  async getLatencyStats(params = {}) {
+    const query = new URLSearchParams();
+    if (params.monitorId || params.monitor_id || params.monitor) {
+      query.set("monitor_id", params.monitorId || params.monitor_id || params.monitor);
+    }
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return api.get(`/executions/latency${qs}`);
+  },
+
+  /**
    * Clears all execution audit logs.
    */
   async clearExecutions() {

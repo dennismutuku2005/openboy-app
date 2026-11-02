@@ -98,6 +98,8 @@ function ExecutionsContent() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [serverHasMore, setServerHasMore] = useState(true);
   const [execStats, setExecStats] = useState(null);
+  const [latencyStats, setLatencyStats] = useState(null);
+  const [isLoadingLatency, setIsLoadingLatency] = useState(false);
 
   // Keyboard shortcut to close modals
   useEffect(() => {
@@ -141,6 +143,23 @@ function ExecutionsContent() {
       }
     } catch (err) {
       console.warn("Failed to load execution stats:", err);
+    }
+  };
+
+  // Dedicated Latency API - loads accurate average ping latency directly from database without fetching the execution logs list
+  const fetchLatencyStats = async () => {
+    setIsLoadingLatency(true);
+    try {
+      const data = await executionService.getLatencyStats({
+        monitorId: monitorParam || undefined,
+      });
+      if (data) {
+        setLatencyStats(data);
+      }
+    } catch (err) {
+      console.warn("Failed to load latency stats:", err);
+    } finally {
+      setIsLoadingLatency(false);
     }
   };
 
@@ -188,6 +207,7 @@ function ExecutionsContent() {
   useEffect(() => {
     fetchExecutionHistory(0, false);
     fetchExecutionStats();
+    fetchLatencyStats();
   }, [monitorParam]);
 
   // Purge all execution records from MySQL
@@ -202,6 +222,13 @@ function ExecutionsContent() {
         errorCount: 0,
         successRate: "100.0%",
         avgLatencyMs: 0,
+      });
+      setLatencyStats({
+        avgLatencyMs: 0,
+        lastLatencyMs: 0,
+        minLatencyMs: 0,
+        maxLatencyMs: 0,
+        totalSamples: 0,
       });
       setShowClearModal(false);
     } catch (err) {
@@ -303,7 +330,9 @@ function ExecutionsContent() {
     triggerPing(id);
     setTimeout(() => {
       setIsPingingSchedule(false);
-    }, 550);
+      fetchExecutionStats();
+      fetchLatencyStats();
+    }, 600);
   };
 
   if (isLoadingAuth) {
@@ -337,9 +366,15 @@ function ExecutionsContent() {
     activeSchedule?.uptime || (totalRuns > 0 ? `${(((totalRuns - errorCount) / totalRuns) * 100).toFixed(1)}%` : "100%")
   );
 
-  const avgLatency = execStats?.avgLatencyMs ?? (
-    activeSchedule?.lastLatency || (filteredLogs.length > 0 ? Math.round(filteredLogs.reduce((acc, curr) => acc + (curr.latency || 0), 0) / filteredLogs.length) : 0)
-  );
+  // Dedicated Latency Metrics loaded directly from /api/executions/latency without scanning execution logs
+  const avgLatency =
+    latencyStats?.avgLatencyMs !== undefined && latencyStats?.avgLatencyMs !== null
+      ? latencyStats.avgLatencyMs
+      : execStats?.avgLatencyMs !== undefined && execStats?.avgLatencyMs !== null
+      ? execStats.avgLatencyMs
+      : isLoadingLatency || isLoadingHistory
+      ? null
+      : 0;
 
   const filterTabs = [
     { id: "all", label: "All Runs", count: filteredLogs.length },
@@ -412,7 +447,11 @@ function ExecutionsContent() {
                   disabled={isRefreshing || isLoadingHistory}
                   onClick={async () => {
                     setIsRefreshing(true);
-                    await fetchExecutionHistory();
+                    await Promise.all([
+                      fetchExecutionHistory(0, false),
+                      fetchExecutionStats(),
+                      fetchLatencyStats(),
+                    ]);
                     setIsRefreshing(false);
                   }}
                   className="px-3 py-2 rounded-lg bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-openboy-border shadow-xs"
@@ -500,6 +539,7 @@ function ExecutionsContent() {
                   await Promise.all([
                     fetchExecutionHistory(0, false),
                     fetchExecutionStats(),
+                    fetchLatencyStats(),
                   ]);
                   setIsRefreshing(false);
                 }}
@@ -552,9 +592,9 @@ function ExecutionsContent() {
 
         <MetricCard
           title="Average Ping Latency"
-          value={`${avgLatency}ms`}
+          value={avgLatency !== null ? `${avgLatency}ms` : "..."}
           valueColor="text-amber-600 dark:text-[#ffd600]"
-          subtitle={activeSchedule ? "This endpoint response" : "Across all endpoints"}
+          subtitle={activeSchedule ? "This endpoint average" : "Across all endpoints"}
           icon={Layers}
         />
       </div>
