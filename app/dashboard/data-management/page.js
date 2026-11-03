@@ -24,6 +24,37 @@ import { MetricCardsSkeleton } from "@/components/DashboardSkeletons";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/Card";
 import { maintenanceService } from "@/services/maintenanceService";
 
+/**
+ * Custom OpenBoy high-precision dual-ring spinner.
+ * Pure SVG/CSS, silky smooth 60fps animation, zero external loader dependencies.
+ */
+function OpenBoyLoader({ size = "w-4 h-4", color = "text-[#ffd600]" }) {
+  return (
+    <span className={`relative inline-flex items-center justify-center shrink-0 ${size}`}>
+      <svg
+        className={`animate-spin ${size} ${color}`}
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-20"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="3.5"
+        />
+        <path
+          className="opacity-95"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        />
+      </svg>
+    </span>
+  );
+}
+
 function formatDate(isoStr) {
   if (!isoStr) return "None";
   try {
@@ -140,7 +171,7 @@ export default function DataManagementPage() {
       description: resetCountersOnPurge
         ? "This will permanently delete all execution logs from the database AND reset all monitor uptime SLAs and ping counts to 100% baseline. Are you sure you want to start afresh?"
         : "This will permanently delete all execution logs across every schedule from the database. Monitor ping counters and SLA calculations will remain untouched.",
-      confirmText: "Yes, Purge Everything & Start Fresh",
+      confirmText: "Yes, Start Fresh",
       confirmStyle: "danger",
       icon: Trash2,
       action: async () => {
@@ -175,7 +206,7 @@ export default function DataManagementPage() {
       description: `Permanently delete execution logs older than ${days} day${
         days > 1 ? "s" : ""
       } from the database. Recent runs will be kept intact.`,
-      confirmText: `Prune Logs Older Than ${days}D`,
+      confirmText: `Prune Older Than ${days}D`,
       confirmStyle: "warning",
       icon: Clock,
       action: async () => {
@@ -217,9 +248,9 @@ export default function DataManagementPage() {
 
     setModalConfig({
       isOpen: true,
-      title: `Reset SLA Baseline for "${monName}"`,
-      description: `Reset total pings and failed pings to 0, restoring "${monName}" to 100.0% SLA.`,
-      confirmText: "Reset Monitor Baseline",
+      title: `Reset SLA for "${monName}"`,
+      description: `Reset total pings and failed pings to 0, restoring "${monName}" to 100.0% SLA baseline.`,
+      confirmText: "Reset SLA to 100%",
       confirmStyle: "warning",
       icon: RotateCcw,
       action: async () => {
@@ -243,7 +274,7 @@ export default function DataManagementPage() {
       description: isResolvedOnly
         ? "Permanently delete resolved incidents from the database. Ongoing outages remain untouched."
         : "Permanently delete all incident records across the system.",
-      confirmText: isResolvedOnly ? "Purge Resolved Incidents" : "Purge All Incidents",
+      confirmText: isResolvedOnly ? "Purge Resolved Only" : "Purge All Incidents",
       confirmStyle: isResolvedOnly ? "warning" : "danger",
       icon: ShieldAlert,
       action: async () => {
@@ -291,7 +322,11 @@ export default function DataManagementPage() {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-openboy-border hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-openboy-text-main transition-colors cursor-pointer"
             title="Refresh database telemetry"
           >
-            <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-[#ffd600]" : ""}`} />
+            {isRefreshing ? (
+              <OpenBoyLoader size="w-3.5 h-3.5" />
+            ) : (
+              <RotateCw className="w-3.5 h-3.5 text-openboy-text-muted" />
+            )}
             <span>Refresh</span>
           </button>
         }
@@ -317,7 +352,7 @@ export default function DataManagementPage() {
           <button
             type="button"
             onClick={() => setToast(null)}
-            className="text-openboy-text-muted hover:text-openboy-text-main p-1 transition-colors"
+            className="text-openboy-text-muted hover:text-openboy-text-main p-1 transition-colors cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -659,40 +694,55 @@ export default function DataManagementPage() {
         )}
       </div>
 
-      {/* Confirmation Modal (Custom OpenBoy Design - No browser alert/confirm!) */}
+      {/* Confirmation Modal (Custom OpenBoy Clean Design with Symmetrical Side-by-Side Buttons) */}
       {modalConfig.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-openboy-surface border border-openboy-border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  modalConfig.confirmStyle === "danger"
-                    ? "bg-rose-500/10 border border-rose-500/20 text-rose-500"
-                    : "bg-amber-500/10 border border-amber-500/20 text-amber-500"
-                }`}
-              >
-                {<modalConfig.icon className="w-5 h-5" />}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md bg-openboy-surface border border-openboy-border rounded-2xl shadow-2xl overflow-hidden p-6 text-openboy-text-main space-y-5 transition-all">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    modalConfig.confirmStyle === "danger"
+                      ? "bg-rose-500/15 border border-rose-500/30 text-rose-500 dark:text-rose-400"
+                      : "bg-amber-500/15 border border-amber-500/30 text-amber-500 dark:text-amber-400"
+                  }`}
+                >
+                  {<modalConfig.icon className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-openboy-text-main">
+                    {modalConfig.title}
+                  </h3>
+                  <p className="text-[11px] font-mono text-openboy-text-muted mt-0.5">
+                    Database Confirmation
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-openboy-text-main">
-                  {modalConfig.title}
-                </h3>
-                <span className="text-[11px] font-mono text-openboy-text-muted">
-                  Database Confirmation
-                </span>
-              </div>
-            </div>
 
-            <p className="text-xs text-openboy-text-muted leading-relaxed">
-              {modalConfig.description}
-            </p>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-openboy-border">
               <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => setModalConfig((prev) => ({ ...prev, isOpen: false }))}
-                className="px-4 py-2 text-xs font-semibold rounded-lg border border-openboy-border hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-openboy-text-main transition-colors cursor-pointer"
+                className="p-1 rounded-md text-openboy-text-muted hover:text-openboy-text-main hover:bg-openboy-surface-hover transition-colors cursor-pointer disabled:opacity-50"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Description Card */}
+            <div className="p-3.5 bg-openboy-surface-subtle border border-openboy-border rounded-xl text-xs text-openboy-text-muted leading-relaxed">
+              {modalConfig.description}
+            </div>
+
+            {/* Symmetrical Side-by-Side Buttons (Grid of Two: Cancel left, Action right) */}
+            <div className="grid grid-cols-2 gap-3 pt-1 w-full">
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => setModalConfig((prev) => ({ ...prev, isOpen: false }))}
+                className="w-full py-2.5 px-4 text-xs font-semibold rounded-xl border border-openboy-border bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-openboy-text-main transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center text-center"
               >
                 Cancel
               </button>
@@ -700,7 +750,7 @@ export default function DataManagementPage() {
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleModalConfirm}
-                className={`px-4 py-2 text-xs font-bold rounded-lg text-white transition-all cursor-pointer flex items-center gap-2 ${
+                className={`w-full py-2.5 px-4 text-xs font-bold rounded-xl text-white transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 text-center ${
                   modalConfig.confirmStyle === "danger"
                     ? "bg-rose-600 hover:bg-rose-500 shadow-rose-600/20"
                     : "bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/20"
@@ -708,13 +758,16 @@ export default function DataManagementPage() {
               >
                 {isSubmitting ? (
                   <>
-                    <RotateCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Executing Maintenance...</span>
+                    <OpenBoyLoader
+                      size="w-3.5 h-3.5"
+                      color={modalConfig.confirmStyle === "danger" ? "text-white" : "text-black"}
+                    />
+                    <span>Executing...</span>
                   </>
                 ) : (
                   <>
-                    {<modalConfig.icon className="w-3.5 h-3.5" />}
-                    <span>{modalConfig.confirmText}</span>
+                    {<modalConfig.icon className="w-3.5 h-3.5 shrink-0" />}
+                    <span className="truncate">{modalConfig.confirmText}</span>
                   </>
                 )}
               </button>
