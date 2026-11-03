@@ -20,7 +20,6 @@ import {
 import { useDashboard } from "@/components/DashboardContext";
 import PageHeader from "@/components/PageHeader";
 import MetricCard from "@/components/MetricCard";
-import FilterTabs from "@/components/FilterTabs";
 import { MetricCardsSkeleton } from "@/components/DashboardSkeletons";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/Card";
 import { maintenanceService } from "@/services/maintenanceService";
@@ -279,7 +278,7 @@ export default function DataManagementPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 animate-fade-in pb-12 w-full">
       {/* Page Header */}
       <PageHeader
         title="Data Management"
@@ -325,11 +324,11 @@ export default function DataManagementPage() {
         </div>
       )}
 
-      {/* Minimal Telemetry Strip (4 Clean KPI Cards) */}
+      {/* Telemetry Strip: Responsive Grid of Two on Phones (grid-cols-2 lg:grid-cols-4) */}
       {isLoadingStats ? (
         <MetricCardsSkeleton count={4} />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
           <MetricCard
             title="Total Runs Stored"
             value={totalLogs.toLocaleString()}
@@ -358,20 +357,34 @@ export default function DataManagementPage() {
         </div>
       )}
 
-      {/* Minimal Tab Switcher */}
-      <div className="pt-2">
-        <FilterTabs
-          tabs={tabs}
-          activeTab={activeTab}
-          onChange={setActiveTab}
-        />
+      {/* Mode Navigation: Responsive Grid of Two on Phones (grid-cols-2 sm:grid-cols-4) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 w-full">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`p-3 text-xs rounded-xl transition-all cursor-pointer font-medium flex items-center justify-center sm:justify-start gap-2 border text-center ${
+                isActive
+                  ? "bg-[#ffd600] text-black font-bold border-[#ffd600] shadow-xs active:scale-[0.98]"
+                  : "bg-openboy-surface text-openboy-text-muted hover:text-openboy-text-main border-openboy-border hover:bg-openboy-surface-hover"
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-black" : "text-openboy-text-dim"}`} />
+              <span className="truncate">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Tab Panels */}
-      <div className="mt-4">
+      {/* Tab Panels (Full Width Cards) */}
+      <div className="w-full">
         {/* TAB 1: FRESH START */}
         {activeTab === "fresh-start" && (
-          <Card className="border-openboy-border">
+          <Card className="border-openboy-border w-full">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle>
@@ -389,7 +402,7 @@ export default function DataManagementPage() {
 
             <CardContent className="space-y-6 pt-5">
               {/* Buffer impact summary */}
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-openboy-surface-subtle border border-openboy-border text-xs">
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-openboy-surface-subtle border border-openboy-border text-xs w-full">
                 <span className="text-openboy-text-muted">Current Execution Rows to Wipe:</span>
                 <span className="font-mono font-bold text-openboy-text-main">
                   {totalLogs.toLocaleString()} runs ({storageMb.toFixed(2)} MB)
@@ -397,7 +410,7 @@ export default function DataManagementPage() {
               </div>
 
               {/* Reset counters toggle */}
-              <label className="flex items-start gap-3 p-3.5 rounded-xl bg-openboy-surface-subtle border border-openboy-border cursor-pointer hover:border-openboy-border-light transition-colors">
+              <label className="flex items-start gap-3 p-3.5 rounded-xl bg-openboy-surface-subtle border border-openboy-border cursor-pointer hover:border-openboy-border-light transition-colors w-full">
                 <input
                   type="checkbox"
                   checked={resetCountersOnPurge}
@@ -418,7 +431,7 @@ export default function DataManagementPage() {
                 <button
                   type="button"
                   onClick={promptPurgeAll}
-                  className="px-5 py-2.5 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+                  className="w-full sm:w-auto px-5 py-2.5 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Purge All Logs & Start Afresh</span>
@@ -430,7 +443,7 @@ export default function DataManagementPage() {
 
         {/* TAB 2: RETENTION PRUNING */}
         {activeTab === "retention" && (
-          <Card className="border-openboy-border">
+          <Card className="border-openboy-border w-full">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle>
@@ -447,15 +460,16 @@ export default function DataManagementPage() {
             </CardHeader>
 
             <CardContent className="space-y-6 pt-5">
-              {/* Presets */}
-              <div className="space-y-2">
+              {/* Presets: Grid of two on phones */}
+              <div className="space-y-2 w-full">
                 <label className="text-[11px] font-mono text-openboy-text-muted block">
                   Select Age Threshold:
                 </label>
-                <div className="grid grid-cols-3 gap-2.5 max-w-md">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full">
                   {[
                     { days: 1, label: "Older than 24h" },
                     { days: 7, label: "Older than 7d" },
+                    { days: 14, label: "Older than 14d" },
                     { days: 30, label: "Older than 30d" },
                   ].map((preset) => {
                     const isSelected = retentionDays === preset.days && !customDays;
@@ -467,9 +481,9 @@ export default function DataManagementPage() {
                           setRetentionDays(preset.days);
                           setCustomDays("");
                         }}
-                        className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer text-center ${
+                        className={`px-3 py-2.5 text-xs font-semibold rounded-xl border transition-all cursor-pointer text-center ${
                           isSelected
-                            ? "bg-[#ffd600] text-black border-[#ffd600] shadow-xs"
+                            ? "bg-[#ffd600] text-black border-[#ffd600] shadow-xs font-bold"
                             : "bg-openboy-surface-subtle border-openboy-border text-openboy-text-muted hover:text-openboy-text-main hover:border-openboy-border-light"
                         }`}
                       >
@@ -481,16 +495,16 @@ export default function DataManagementPage() {
               </div>
 
               {/* Custom input */}
-              <div className="flex items-center gap-2 max-w-xs">
-                <span className="text-xs text-openboy-text-muted shrink-0">Custom threshold:</span>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-xs text-openboy-text-muted shrink-0">Or custom threshold:</span>
                 <input
                   type="number"
                   min="1"
                   max="365"
                   value={customDays}
-                  placeholder="e.g. 14"
+                  placeholder="e.g. 21"
                   onChange={(e) => setCustomDays(e.target.value)}
-                  className="w-24 bg-openboy-surface-subtle border border-openboy-border rounded-lg px-2.5 py-1.5 text-xs text-openboy-text-main focus:outline-none focus:border-[#ffd600] font-mono"
+                  className="w-28 bg-openboy-surface-subtle border border-openboy-border rounded-lg px-2.5 py-1.5 text-xs text-openboy-text-main focus:outline-none focus:border-[#ffd600] font-mono"
                 />
                 <span className="text-xs text-openboy-text-muted">days</span>
               </div>
@@ -499,7 +513,7 @@ export default function DataManagementPage() {
                 <button
                   type="button"
                   onClick={promptRetentionPruning}
-                  className="px-5 py-2.5 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-400 text-black transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+                  className="w-full sm:w-auto px-5 py-2.5 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-400 text-black transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
                 >
                   <Calendar className="w-4 h-4" />
                   <span>
@@ -513,7 +527,7 @@ export default function DataManagementPage() {
 
         {/* TAB 3: BY SCHEDULE */}
         {activeTab === "monitor" && (
-          <Card className="border-openboy-border">
+          <Card className="border-openboy-border w-full">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle>
@@ -531,7 +545,7 @@ export default function DataManagementPage() {
 
             <CardContent className="space-y-6 pt-5">
               {/* Monitor Dropdown */}
-              <div className="space-y-1.5 max-w-lg">
+              <div className="space-y-1.5 w-full">
                 <label className="text-[11px] font-mono text-openboy-text-muted block">
                   Select Target Schedule:
                 </label>
@@ -548,9 +562,9 @@ export default function DataManagementPage() {
                 </select>
               </div>
 
-              {/* Minimal Schedule Metrics */}
+              {/* Schedule Metrics: Grid of Two on Phones (grid-cols-2 sm:grid-cols-3) */}
               {selectedMonitor && (
-                <div className="grid grid-cols-3 gap-3 p-3.5 rounded-xl bg-openboy-surface-subtle border border-openboy-border text-xs max-w-lg">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-openboy-surface-subtle border border-openboy-border text-xs w-full">
                   <div>
                     <span className="text-[11px] text-openboy-text-muted block">Total Runs</span>
                     <span className="text-sm font-bold font-mono text-openboy-text-main mt-0.5 block">
@@ -563,7 +577,7 @@ export default function DataManagementPage() {
                       {Number(selectedMonitor.failedPings ?? 0).toLocaleString()}
                     </span>
                   </div>
-                  <div>
+                  <div className="col-span-2 sm:col-span-1">
                     <span className="text-[11px] text-openboy-text-muted block">24h SLA</span>
                     <span className="text-sm font-bold font-mono text-[#ffd600] mt-0.5 block">
                       {selectedMonitor.uptimePct || "100.0%"}
@@ -572,12 +586,12 @@ export default function DataManagementPage() {
                 </div>
               )}
 
-              <div className="pt-2 flex flex-wrap items-center gap-3">
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <button
                   type="button"
                   disabled={!selectedMonitorId}
                   onClick={promptTargetedMonitorCleanup}
-                  className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-all cursor-pointer flex items-center gap-2 shadow-xs disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-500 text-white transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Purge Selected Schedule Logs</span>
@@ -586,7 +600,7 @@ export default function DataManagementPage() {
                   type="button"
                   disabled={!selectedMonitorId}
                   onClick={promptResetMonitorMetrics}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-openboy-border hover:bg-openboy-surface-hover text-openboy-text-main transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-openboy-border hover:bg-openboy-surface-hover text-openboy-text-main transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <RotateCcw className="w-3.5 h-3.5 text-openboy-text-muted" />
                   <span>Reset SLA Baseline to 100%</span>
@@ -598,7 +612,7 @@ export default function DataManagementPage() {
 
         {/* TAB 4: INCIDENTS */}
         {activeTab === "incidents" && (
-          <Card className="border-openboy-border">
+          <Card className="border-openboy-border w-full">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle>
@@ -615,18 +629,18 @@ export default function DataManagementPage() {
             </CardHeader>
 
             <CardContent className="space-y-6 pt-5">
-              <div className="p-3.5 rounded-xl bg-openboy-surface-subtle border border-openboy-border text-xs flex items-center justify-between max-w-lg">
+              <div className="p-3.5 rounded-xl bg-openboy-surface-subtle border border-openboy-border text-xs flex items-center justify-between w-full">
                 <span className="text-openboy-text-muted">Total Stored Incident Reports:</span>
                 <span className="font-mono font-bold text-openboy-text-main">
                   {totalIncidents.toLocaleString()} records
                 </span>
               </div>
 
-              <div className="pt-2 flex flex-wrap items-center gap-3">
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <button
                   type="button"
                   onClick={() => promptClearIncidents("resolved")}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-purple-600 hover:bg-purple-500 text-white transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-purple-600 hover:bg-purple-500 text-white transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Purge Resolved Incidents Only</span>
@@ -634,7 +648,7 @@ export default function DataManagementPage() {
                 <button
                   type="button"
                   onClick={() => promptClearIncidents("")}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-rose-900/50 hover:bg-rose-950/30 text-rose-400 transition-colors cursor-pointer flex items-center gap-2"
+                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-rose-900/50 hover:bg-rose-950/30 text-rose-400 transition-colors cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Purge All Incidents</span>
