@@ -49,3 +49,4 @@ export const maintenanceService = {
     return api.delete(`/incidents${qs}`);
   },
 };
+
