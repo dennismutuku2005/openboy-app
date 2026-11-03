@@ -17,6 +17,7 @@ import {
   Loader2,
   X,
   User,
+  Database,
 } from "lucide-react";
 import { useDashboard } from "./DashboardContext";
 
@@ -42,6 +43,7 @@ export default function DashboardSidebar() {
     { href: "/dashboard/uptime", label: "Uptime SLA", icon: Activity },
     { href: "/dashboard/batchers", label: "Batchers", icon: Server },
     { href: "/dashboard/incidents", label: "Incidents", icon: ShieldAlert },
+    { href: "/dashboard/data-management", label: "Data Management", icon: Database },
     { href: "/dashboard/profile", label: "Profile", icon: User },
   ];
 

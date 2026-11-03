@@ -304,6 +304,21 @@ export function DashboardProvider({ children }) {
     }
   };
 
+  const reloadMonitors = async () => {
+    try {
+      const res = await monitorService.getMonitors();
+      if (Array.isArray(res)) {
+        setMonitors(res);
+      }
+    } catch (e) {
+      console.warn("Could not reload monitors:", e);
+    }
+  };
+
+  const clearLocalLogs = () => {
+    setLogs([]);
+  };
+
   return (
     <DashboardContext.Provider
       value={{
@@ -315,6 +330,8 @@ export function DashboardProvider({ children }) {
         currentUser,
         isLoadingAuth,
         fetchLogs,
+        reloadMonitors,
+        clearLocalLogs,
         deleteDialog,
         pingResultDialog,
         isMobileSidebarOpen,
