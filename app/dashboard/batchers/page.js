@@ -14,6 +14,7 @@ import {
   Trash2,
   Cpu,
   X,
+  Pencil,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { TableSkeletonRows, MetricCardsSkeleton } from "@/components/DashboardSkeletons";
@@ -24,6 +25,22 @@ import FilterTabs from "@/components/FilterTabs";
 import StatusBadge from "@/components/StatusBadge";
 import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
 import { batcherService } from "@/services/batcherService";
+
+function OpenBoyLoader({ size = "w-4 h-4", color = "text-[#ffd600]" }) {
+  return (
+    <span className={`relative inline-flex items-center justify-center shrink-0 ${size}`}>
+      <svg
+        className={`animate-spin ${size} ${color}`}
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3.5" />
+        <path className="opacity-95" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+      </svg>
+    </span>
+  );
+}
 
 export default function BatchersPage() {
   const { isLoadingAuth } = useDashboard();
@@ -43,6 +60,8 @@ export default function BatchersPage() {
     batcher: null,
   });
   const [newBatchModal, setNewBatchModal] = useState(false);
+  const [editingBatcherId, setEditingBatcherId] = useState(null);
+  const [isSubmittingBatcher, setIsSubmittingBatcher] = useState(false);
   const [newForm, setNewForm] = useState({
     name: "",
     jobKey: "",
@@ -194,9 +213,63 @@ export default function BatchersPage() {
     setDeleteModal({ isOpen: false, batcher: null });
   };
 
-  const handleCreateBatcher = async (e) => {
+  const openEditBatcher = (worker) => {
+    setEditingBatcherId(worker.id);
+    setNewForm({
+      name: worker.name,
+      jobKey: worker.jobKey,
+      schedule: worker.schedule,
+      cronExpr: worker.cronExpr,
+      targetQueue: worker.targetQueue,
+      description: worker.description,
+    });
+    setNewBatchModal(true);
+  };
+
+  const openCreateBatcher = () => {
+    setEditingBatcherId(null);
+    setNewForm({
+      name: "",
+      jobKey: "",
+      schedule: "Every 10m",
+      cronExpr: "*/10 * * * *",
+      targetQueue: "",
+      description: "",
+    });
+    setNewBatchModal(true);
+  };
+
+  const handleSaveBatcher = async (e) => {
     e.preventDefault();
     if (!newForm.name) return;
+    setIsSubmittingBatcher(true);
+
+    if (editingBatcherId) {
+      const updatedFields = {
+        name: newForm.name,
+        jobKey: newForm.jobKey || newForm.name.toLowerCase().replace(/[^a-z0-9]/g, "_"),
+        schedule: newForm.schedule,
+        cronExpr: newForm.cronExpr,
+        targetQueue: newForm.targetQueue || "internal.queue.default",
+        description: newForm.description || "Custom background batch consumer.",
+      };
+
+      setBatchers((prev) =>
+        prev.map((b) => (b.id === editingBatcherId ? { ...b, ...updatedFields } : b))
+      );
+      setNewBatchModal(false);
+      const targetId = editingBatcherId;
+      setEditingBatcherId(null);
+
+      try {
+        await batcherService.updateBatcher(targetId, updatedFields);
+      } catch (err) {
+        console.error("Failed to update batcher:", err);
+      } finally {
+        setIsSubmittingBatcher(false);
+      }
+      return;
+    }
 
     const newWorker = {
       id: "batch-" + Date.now(),
@@ -226,7 +299,9 @@ export default function BatchersPage() {
 
     try {
       await batcherService.createBatcher(newWorker);
-    } catch {}
+    } catch {} finally {
+      setIsSubmittingBatcher(false);
+    }
   };
 
   if (isLoadingAuth) {
@@ -254,7 +329,7 @@ export default function BatchersPage() {
         actions={
           <button
             type="button"
-            onClick={() => setNewBatchModal(true)}
+            onClick={openCreateBatcher}
             className="w-full sm:w-auto py-2.5 px-4 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs rounded-lg transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
@@ -410,6 +485,15 @@ export default function BatchersPage() {
                           title={isActive ? "Pause Worker" : "Resume Worker"}
                         >
                           {isActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 text-emerald-500" />}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditBatcher(worker)}
+                          className="p-1.5 rounded-md bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-[#ffd600] border border-openboy-border transition-colors cursor-pointer"
+                          title="Edit Schedule & Settings"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
                         </button>
 
                         <button
@@ -587,19 +671,28 @@ export default function BatchersPage() {
           <div className="bg-openboy-surface border border-openboy-border rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4 text-openboy-text-main transition-colors">
             <div className="flex items-center justify-between pb-3 border-b border-openboy-border">
               <div className="flex items-center gap-2">
-                <Plus className="w-4 h-4 text-[#ffd600]" />
-                <h3 className="text-sm font-bold text-openboy-text-main">Register Batch Worker</h3>
+                {editingBatcherId ? (
+                  <Pencil className="w-4 h-4 text-[#ffd600]" />
+                ) : (
+                  <Plus className="w-4 h-4 text-[#ffd600]" />
+                )}
+                <h3 className="text-sm font-bold text-openboy-text-main">
+                  {editingBatcherId ? "Edit Batch Worker Schedule" : "Register Batch Worker"}
+                </h3>
               </div>
               <button
                 type="button"
-                onClick={() => setNewBatchModal(false)}
+                onClick={() => {
+                  setNewBatchModal(false);
+                  setEditingBatcherId(null);
+                }}
                 className="text-openboy-text-muted hover:text-openboy-text-main p-1 rounded-md"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateBatcher} className="space-y-4">
+            <form onSubmit={handleSaveBatcher} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-openboy-text-main mb-1">
                   Worker Name
@@ -676,19 +769,31 @@ export default function BatchersPage() {
                 />
               </div>
 
-              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
+              <div className="pt-2 grid grid-cols-2 gap-3 w-full">
                 <button
                   type="button"
-                  onClick={() => setNewBatchModal(false)}
-                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg border border-openboy-border bg-openboy-surface-subtle text-xs font-semibold text-openboy-text-muted hover:text-openboy-text-main transition-colors"
+                  onClick={() => {
+                    setNewBatchModal(false);
+                    setEditingBatcherId(null);
+                  }}
+                  disabled={isSubmittingBatcher}
+                  className="w-full py-2.5 px-4 rounded-lg border border-openboy-border bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs transition-colors"
+                  disabled={isSubmittingBatcher}
+                  className="w-full py-2.5 px-4 rounded-lg bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-xs transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.99]"
                 >
-                  Save Worker
+                  {isSubmittingBatcher && <OpenBoyLoader size="w-3.5 h-3.5" color="text-black" />}
+                  <span>
+                    {isSubmittingBatcher
+                      ? "Saving..."
+                      : editingBatcherId
+                      ? "Save Changes"
+                      : "Register Worker"}
+                  </span>
                 </button>
               </div>
             </form>

@@ -7,6 +7,7 @@ import {
   Plus,
   Play,
   Pause,
+  Pencil,
   Trash2,
   ExternalLink,
   Clock,
@@ -74,6 +75,7 @@ export default function DashboardMainPage() {
     logs,
     fetchLogs,
     openCreateModal,
+    openEditModal,
     promptDeleteMonitor,
     togglePause,
     triggerPing,
@@ -469,6 +471,19 @@ export default function DashboardMainPage() {
                                 ) : (
                                   <Play className="w-3.5 h-3.5 text-emerald-500" />
                                 )}
+                              </button>
+
+                              {/* Edit Schedule */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditModal(mon);
+                                }}
+                                title="Edit schedule"
+                                className="p-1.5 rounded-md bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-[#ffd600] transition-colors cursor-pointer border border-openboy-border"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
                               </button>
 
                               {/* Delete Monitor */}

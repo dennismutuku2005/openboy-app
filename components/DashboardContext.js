@@ -176,6 +176,22 @@ export function DashboardProvider({ children }) {
     }
   };
 
+  const updateMonitor = async (id, updatedFields) => {
+    try {
+      const updated = await monitorService.updateMonitor(id, updatedFields);
+      if (updated) {
+        setMonitors((prev) =>
+          prev.map((m) => (m.id === id ? { ...m, ...updated } : m))
+        );
+        return updated;
+      }
+      return null;
+    } catch (err) {
+      console.error("Failed to update monitor in API:", err);
+      throw err;
+    }
+  };
+
   const promptDeleteMonitor = (monitor) => {
     setDeleteDialog({ isOpen: true, monitor });
   };
@@ -270,6 +286,11 @@ export function DashboardProvider({ children }) {
     setIsModalOpen(true);
   };
 
+  const openEditModal = (monitor) => {
+    setModalInitialData(monitor);
+    setIsModalOpen(true);
+  };
+
   const closeCreateModal = () => {
     setIsModalOpen(false);
     setModalInitialData(null);
@@ -339,8 +360,10 @@ export function DashboardProvider({ children }) {
         logout,
         setActiveFilter,
         openCreateModal,
+        openEditModal,
         closeCreateModal,
         addMonitor,
+        updateMonitor,
         promptDeleteMonitor,
         closeDeleteDialog,
         confirmDelete,

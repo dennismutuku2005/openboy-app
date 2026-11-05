@@ -16,6 +16,7 @@ import {
   ArrowUpRight,
   ShieldAlert,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { MetricCardsSkeleton, TableSkeleton, TableSkeletonRows } from "@/components/DashboardSkeletons";
@@ -61,7 +62,7 @@ function formatLogDate(timestamp) {
 function ExecutionsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { logs, monitors, triggerPing, isLoadingAuth } = useDashboard();
+  const { logs, monitors, triggerPing, openEditModal, isLoadingAuth } = useDashboard();
 
   const monitorParam = searchParams.get("monitor") || searchParams.get("id");
   const searchParam = searchParams.get("search") || "";
@@ -530,6 +531,16 @@ function ExecutionsContent() {
                     <span>Clear</span>
                   </button>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => openEditModal(activeSchedule)}
+                  className="px-3 py-2 rounded-lg bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-openboy-border shadow-xs hover:border-[#ffd600]/40"
+                  title="Edit schedule configuration"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-[#ffd600]" />
+                  <span>Edit Schedule</span>
+                </button>
 
                 <button
                   type="button"
