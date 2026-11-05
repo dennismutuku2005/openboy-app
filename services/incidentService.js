@@ -38,11 +38,19 @@ export const incidentService = {
 
   /**
    * Deletes multiple marked incident records by IDs in a single request.
+   * Uses POST with JSON payload to avoid browser / reverse-proxy URL length limits.
    */
   async deleteIncidents(ids = []) {
     if (!ids || ids.length === 0) return { cleared: 0 };
-    const qs = new URLSearchParams({ ids: ids.join(",") });
-    return api.delete(`/incidents?${qs.toString()}`);
+    return api.post("/incidents/batch-delete", { ids });
+  },
+
+  /**
+   * Resolves multiple marked incident records by IDs in a single batch request.
+   */
+  async resolveIncidents(ids = []) {
+    if (!ids || ids.length === 0) return { resolved: 0 };
+    return api.post("/incidents/batch-resolve", { ids });
   },
 
   /**

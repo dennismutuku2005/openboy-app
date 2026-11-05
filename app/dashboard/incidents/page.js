@@ -238,7 +238,10 @@ export default function IncidentsPage() {
       confirmStyle: "danger",
       icon: Trash2,
       action: async () => {
-        const res = await incidentService.deleteIncidents(selectedIds);
+        const isAll = count >= incidents.length && searchQuery.trim() === "" && statusFilter === "all" && serviceFilter === "all";
+        const res = isAll
+          ? await incidentService.clearAllIncidents()
+          : await incidentService.deleteIncidents(selectedIds);
         const deletedCount = res?.cleared ?? count;
         setIncidents((prev) => prev.filter((i) => !selectedIds.includes(i.id)));
         setSelectedIds([]);
@@ -263,10 +266,10 @@ export default function IncidentsPage() {
       confirmStyle: "primary",
       icon: CheckCircle2,
       action: async () => {
-        for (const id of selectedIds) {
-          try {
-            await incidentService.resolveIncident(id);
-          } catch {}
+        try {
+          await incidentService.resolveIncidents(selectedIds);
+        } catch {
+          await Promise.allSettled(selectedIds.map((id) => incidentService.resolveIncident(id)));
         }
         setIncidents((prev) =>
           prev.map((inc) =>

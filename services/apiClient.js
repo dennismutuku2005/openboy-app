@@ -66,5 +66,14 @@ export const api = {
     apiRequest(endpoint, { method: "POST", body: JSON.stringify(body), ...options }),
   put: (endpoint, body, options) =>
     apiRequest(endpoint, { method: "PUT", body: JSON.stringify(body), ...options }),
-  delete: (endpoint, options) => apiRequest(endpoint, { method: "DELETE", ...options }),
+  delete: (endpoint, bodyOrOptions, options) => {
+    if (bodyOrOptions && typeof bodyOrOptions === "object" && !bodyOrOptions.headers && !bodyOrOptions.signal) {
+      return apiRequest(endpoint, {
+        method: "DELETE",
+        body: JSON.stringify(bodyOrOptions),
+        ...options,
+      });
+    }
+    return apiRequest(endpoint, { method: "DELETE", ...(bodyOrOptions || options) });
+  },
 };
