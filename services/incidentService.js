@@ -35,4 +35,20 @@ export const incidentService = {
   async deleteIncident(id) {
     return api.delete(`/incidents/${id}`);
   },
+
+  /**
+   * Deletes multiple marked incident records by IDs in a single request.
+   */
+  async deleteIncidents(ids = []) {
+    if (!ids || ids.length === 0) return { cleared: 0 };
+    const qs = new URLSearchParams({ ids: ids.join(",") });
+    return api.delete(`/incidents?${qs.toString()}`);
+  },
+
+  /**
+   * Clears all incident records across the entire system.
+   */
+  async clearAllIncidents() {
+    return api.delete("/incidents");
+  },
 };

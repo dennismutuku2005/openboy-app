@@ -392,6 +392,31 @@ export default function DataManagementPage() {
         </div>
       )}
 
+      {/* Automated Daily Midnight Cleanup Status Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-openboy-surface border border-openboy-border text-xs w-full shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#ffd600]/10 border border-[#ffd600]/25 flex items-center justify-center text-[#ffd600] shrink-0">
+            <Clock className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-openboy-text-main">Automated Daily Log Purge:</span>
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                ACTIVE
+              </span>
+            </div>
+            <p className="text-[11px] text-openboy-text-muted mt-0.5">
+              All execution runs are automatically cleared at midnight (00:00) before every new day begins; incidents are safely preserved.
+            </p>
+          </div>
+        </div>
+
+        <div className="text-[11px] font-mono text-openboy-text-muted shrink-0 text-left sm:text-right">
+          <span>Scheduled Cadence: </span>
+          <span className="text-[#ffd600] font-semibold">Every Day at 00:00:00</span>
+        </div>
+      </div>
+
       {/* Mode Navigation: Responsive Grid of Two on Phones (grid-cols-2 sm:grid-cols-4) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 w-full">
         {tabs.map((tab) => {

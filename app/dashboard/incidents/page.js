@@ -1,22 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ShieldAlert,
   AlertTriangle,
   CheckCircle2,
   Clock,
-  ExternalLink,
   RotateCw,
   Bell,
-  Radio,
-  FileText,
-  Search,
   Check,
   X,
-  Play,
   Trash2,
-  Loader2,
+  Sparkles,
 } from "lucide-react";
 import { useDashboard } from "@/components/DashboardContext";
 import { TableSkeletonRows, MetricCardsSkeleton } from "@/components/DashboardSkeletons";
@@ -28,6 +23,37 @@ import StatusBadge from "@/components/StatusBadge";
 import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel";
 import { incidentService } from "@/services/incidentService";
 
+/**
+ * Custom OpenBoy high-precision dual-ring spinner.
+ * Pure SVG/CSS, silky smooth 60fps animation, zero external loader dependencies.
+ */
+function OpenBoyLoader({ size = "w-4 h-4", color = "text-[#ffd600]" }) {
+  return (
+    <span className={`relative inline-flex items-center justify-center shrink-0 ${size}`}>
+      <svg
+        className={`animate-spin ${size} ${color}`}
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-20"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="3.5"
+        />
+        <path
+          className="opacity-95"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        />
+      </svg>
+    </span>
+  );
+}
+
 export default function IncidentsPage() {
   const { monitors, triggerPing, isLoadingAuth } = useDashboard();
   const [incidents, setIncidents] = useState([]);
@@ -35,32 +61,48 @@ export default function IncidentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("all");
 
-  const [resolveModal, setResolveModal] = useState({ isOpen: false, incident: null });
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, incident: null });
+  // Selection / Marking State
+  const [selectedIds, setSelectedIds] = useState([]);
 
-  // Fetch real incidents from incidentService on mount
+  // Toast Banner
+  const [toast, setToast] = useState(null);
+
+  // Unified Custom Modal State (Symmetrical Side-by-Side buttons & OpenBoyLoader)
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    title: "",
+    description: "",
+    confirmText: "",
+    confirmStyle: "danger", // "danger" | "warning" | "primary"
+    icon: Trash2,
+    action: null,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto-hide toast after 5s
   useEffect(() => {
-    let mounted = true;
-    async function loadIncidents() {
-      setIsLoadingIncidents(true);
-      try {
-        const data = await incidentService.getIncidents();
-        if (mounted) {
-          setIncidents(Array.isArray(data) ? data : []);
-        }
-      } catch {
-        if (mounted) setIncidents([]);
-      } finally {
-        if (mounted) {
-          setIsLoadingIncidents(false);
-        }
-      }
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
     }
-    loadIncidents();
-    return () => {
-      mounted = false;
-    };
+  }, [toast]);
+
+  // Fetch real incidents from incidentService
+  const loadIncidents = useCallback(async (isManual = false) => {
+    if (isManual) setIsLoadingIncidents(true);
+    try {
+      const data = await incidentService.getIncidents();
+      setIncidents(Array.isArray(data) ? data : []);
+    } catch {
+      setIncidents([]);
+    } finally {
+      setIsLoadingIncidents(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadIncidents();
+  }, [loadIncidents]);
 
   const activeFailingMonitors = (monitors || []).filter((m) => m.status === "failing");
 
@@ -118,49 +160,170 @@ export default function IncidentsPage() {
     };
   }, [hasMore, isLoadingMore]);
 
+  // Selection Handlers
+  const isAllSelected =
+    filteredIncidents.length > 0 &&
+    filteredIncidents.every((inc) => selectedIds.includes(inc.id));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredIncidents.map((inc) => inc.id));
+    }
+  };
+
+  const toggleSelectOne = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  // 1. Single Incident Resolve
   const promptResolve = (incident) => {
-    setResolveModal({ isOpen: true, incident });
+    setModalConfig({
+      isOpen: true,
+      title: "Mark Incident as Resolved",
+      description: `Confirming resolution will archive outage "${incident.title}" for ${incident.service} and record final MTTR downtime duration.`,
+      confirmText: "Confirm Resolved",
+      confirmStyle: "primary",
+      icon: Check,
+      action: async () => {
+        await incidentService.resolveIncident(incident.id);
+        setIncidents((prev) =>
+          prev.map((inc) =>
+            inc.id === incident.id
+              ? {
+                  ...inc,
+                  status: "resolved",
+                  resolvedAt: "Just now",
+                  duration: "Resolved in 26m",
+                }
+              : inc
+          )
+        );
+        setToast({ type: "success", message: `Incident "${incident.title}" marked as resolved.` });
+      },
+    });
   };
 
-  const confirmResolve = async () => {
-    if (resolveModal.incident) {
-      const incidentId = resolveModal.incident.id;
-      setIncidents((prev) =>
-        prev.map((inc) =>
-          inc.id === incidentId
-            ? {
-                ...inc,
-                status: "resolved",
-                resolvedAt: "Just now",
-                duration: "Resolved in 26m",
-              }
-            : inc
-        )
-      );
-      try {
-        await incidentService.resolveIncident(incidentId);
-      } catch {}
-    }
-    setResolveModal({ isOpen: false, incident: null });
-  };
-
+  // 2. Single Incident Delete
   const promptDelete = (incident) => {
-    setDeleteModal({ isOpen: true, incident });
+    setModalConfig({
+      isOpen: true,
+      title: "Delete Incident Record",
+      description: `Permanently delete incident "${incident.title}" (${incident.service}) from the database. This action cannot be undone.`,
+      confirmText: "Delete Incident",
+      confirmStyle: "danger",
+      icon: Trash2,
+      action: async () => {
+        await incidentService.deleteIncident(incident.id);
+        setIncidents((prev) => prev.filter((i) => i.id !== incident.id));
+        setSelectedIds((prev) => prev.filter((x) => x !== incident.id));
+        setToast({ type: "success", message: `Incident "${incident.title}" deleted successfully.` });
+      },
+    });
   };
 
-  const confirmDelete = async () => {
-    if (deleteModal.incident) {
-      const incidentId = deleteModal.incident.id;
-      setIncidents((prev) => prev.filter((i) => i.id !== incidentId));
-      try {
-        await incidentService.deleteIncident(incidentId);
-      } catch {}
+  // 3. Delete Marked / Selected Incidents
+  const promptDeleteSelected = () => {
+    const count = selectedIds.length;
+    if (count === 0) return;
+
+    setModalConfig({
+      isOpen: true,
+      title: `Delete ${count} Marked Incident${count > 1 ? "s" : ""}`,
+      description: `Permanently delete ${count} selected incident record${count > 1 ? "s" : ""} from the database. This action cannot be undone.`,
+      confirmText: `Delete Marked (${count})`,
+      confirmStyle: "danger",
+      icon: Trash2,
+      action: async () => {
+        const res = await incidentService.deleteIncidents(selectedIds);
+        const deletedCount = res?.cleared ?? count;
+        setIncidents((prev) => prev.filter((i) => !selectedIds.includes(i.id)));
+        setSelectedIds([]);
+        setToast({
+          type: "success",
+          message: `Successfully deleted ${deletedCount} marked incident record${deletedCount > 1 ? "s" : ""}.`,
+        });
+      },
+    });
+  };
+
+  // 4. Mark Selected as Resolved
+  const promptResolveSelected = () => {
+    const count = selectedIds.length;
+    if (count === 0) return;
+
+    setModalConfig({
+      isOpen: true,
+      title: `Resolve ${count} Marked Incident${count > 1 ? "s" : ""}`,
+      description: `Mark all ${count} selected incident${count > 1 ? "s" : ""} as resolved. Post-mortems will be timestamped.`,
+      confirmText: `Resolve Marked (${count})`,
+      confirmStyle: "primary",
+      icon: CheckCircle2,
+      action: async () => {
+        for (const id of selectedIds) {
+          try {
+            await incidentService.resolveIncident(id);
+          } catch {}
+        }
+        setIncidents((prev) =>
+          prev.map((inc) =>
+            selectedIds.includes(inc.id)
+              ? { ...inc, status: "resolved", resolvedAt: "Just now" }
+              : inc
+          )
+        );
+        setSelectedIds([]);
+        setToast({
+          type: "success",
+          message: `Marked ${count} selected incident${count > 1 ? "s" : ""} as resolved.`,
+        });
+      },
+    });
+  };
+
+  // 5. Delete All Incidents
+  const promptDeleteAll = () => {
+    const count = incidents.length;
+    if (count === 0) return;
+
+    setModalConfig({
+      isOpen: true,
+      title: "Delete All Incident Records",
+      description: `Permanently delete ALL ${count} incident record${count > 1 ? "s" : ""} across the entire system. This clears all active and resolved outage logs.`,
+      confirmText: "Yes, Delete All Incidents",
+      confirmStyle: "danger",
+      icon: Trash2,
+      action: async () => {
+        const res = await incidentService.clearAllIncidents();
+        setIncidents([]);
+        setSelectedIds([]);
+        setToast({
+          type: "success",
+          message: `Cleared all ${res?.cleared ?? count} incident records from database.`,
+        });
+      },
+    });
+  };
+
+  // Modal confirm execution
+  const handleModalConfirm = async () => {
+    if (!modalConfig.action) return;
+    setIsSubmitting(true);
+    try {
+      await modalConfig.action();
+      setModalConfig((prev) => ({ ...prev, isOpen: false }));
+    } catch (err) {
+      console.error("Incident action failed:", err);
+      setToast({
+        type: "error",
+        message: err.message || "Failed to execute incident operation.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    setDeleteModal({ isOpen: false, incident: null });
-  };
-
-  const runDiagnostics = (monitorId) => {
-    triggerPing(monitorId);
   };
 
   if (isLoadingAuth) {
@@ -233,18 +396,74 @@ export default function IncidentsPage() {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-12 w-full">
       {/* Page Header */}
       <PageHeader
         title="Incidents & Downtime Alarms"
         subtitle="Normalized production table of downtime alarms, MTTR telemetry, and root-cause post-mortems."
+        actions={
+          <div className="flex items-center gap-2">
+            {incidents.length > 0 && (
+              <button
+                type="button"
+                onClick={promptDeleteAll}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Delete all incident records"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete All Incidents</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => loadIncidents(true)}
+              disabled={isLoadingIncidents}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-openboy-border hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-openboy-text-main transition-colors cursor-pointer"
+              title="Refresh incident records"
+            >
+              {isLoadingIncidents ? (
+                <OpenBoyLoader size="w-3.5 h-3.5" />
+              ) : (
+                <RotateCw className="w-3.5 h-3.5 text-openboy-text-muted" />
+              )}
+              <span>Refresh</span>
+            </button>
+          </div>
+        }
       />
 
-      {/* Metrics Row using Shareable MetricCard */}
+      {/* Toast Notification Banner */}
+      {toast && (
+        <div
+          className={`flex items-center justify-between p-3.5 rounded-xl border transition-all duration-200 animate-in fade-in slide-in-from-top-1 ${
+            toast.type === "success"
+              ? "bg-emerald-950/40 border-emerald-800/60 text-emerald-300"
+              : "bg-rose-950/40 border-rose-800/60 text-rose-300"
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {toast.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            )}
+            <span className="text-xs font-medium">{toast.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="text-openboy-text-muted hover:text-openboy-text-main p-1 transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Metrics Row: Grid of Two on Phones */}
       {isLoadingIncidents ? (
         <MetricCardsSkeleton count={4} />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
           <MetricCard
             title="Active Outages"
             value={activeOutagesCount}
@@ -297,12 +516,62 @@ export default function IncidentsPage() {
         />
       </div>
 
-      {/* High-Density Incidents Table */}
-      <div className="rounded-xl border border-openboy-border bg-openboy-surface overflow-hidden shadow-xs">
+      {/* Bulk Action Bar for Marked / Selected Incidents */}
+      {selectedIds.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-openboy-surface border border-[#ffd600]/40 shadow-lg animate-in fade-in slide-in-from-top-1 w-full">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="w-5 h-5 rounded-md bg-[#ffd600] text-black font-bold flex items-center justify-center text-[11px]">
+              {selectedIds.length}
+            </span>
+            <span className="font-semibold text-openboy-text-main">
+              incident{selectedIds.length > 1 ? "s" : ""} marked
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={promptResolveSelected}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Mark as Resolved</span>
+            </button>
+            <button
+              type="button"
+              onClick={promptDeleteSelected}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-500 text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Marked ({selectedIds.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="p-1.5 text-openboy-text-muted hover:text-openboy-text-main text-xs transition-colors cursor-pointer"
+              title="Clear selection"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Incidents Table */}
+      <div className="rounded-xl border border-openboy-border bg-openboy-surface overflow-hidden shadow-xs w-full">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px] text-left border-collapse text-xs">
             <thead className="bg-openboy-surface-subtle text-openboy-text-muted font-mono border-b border-openboy-border">
               <tr>
+                <th className="py-3 px-3 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={toggleSelectAll}
+                    title={isAllSelected ? "Deselect all" : "Select all visible"}
+                    className="rounded border-openboy-border text-[#ffd600] focus:ring-[#ffd600] bg-openboy-surface cursor-pointer w-3.5 h-3.5"
+                  />
+                </th>
                 <th className="py-3 px-4 font-semibold w-[120px]">Severity</th>
                 <th className="py-3 px-4 font-semibold w-[110px]">Status</th>
                 <th className="py-3 px-4 font-semibold min-w-[200px]">Incident / Affected Service</th>
@@ -316,67 +585,84 @@ export default function IncidentsPage() {
                 <TableSkeletonRows rows={8} />
               ) : filteredIncidents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-openboy-text-muted">
+                  <td colSpan={7} className="py-12 text-center text-openboy-text-muted">
                     <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
                     <div className="text-sm font-semibold text-openboy-text-main">No Incidents Recorded</div>
                     <div className="text-xs text-openboy-text-muted mt-0.5">All monitored endpoints are operating within normal parameters.</div>
                   </td>
                 </tr>
               ) : (
-                filteredIncidents.slice(0, visibleCount).map((inc, idx) => (
-                  <tr key={inc.id ? `${inc.id}-${idx}` : `inc-${idx}`} className="hover:bg-openboy-surface-hover transition-colors">
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <StatusBadge status={inc.severity} />
-                    </td>
+                filteredIncidents.slice(0, visibleCount).map((inc, idx) => {
+                  const isChecked = selectedIds.includes(inc.id);
+                  return (
+                    <tr
+                      key={inc.id ? `${inc.id}-${idx}` : `inc-${idx}`}
+                      className={`hover:bg-openboy-surface-hover transition-colors ${
+                        isChecked ? "bg-[#ffd600]/5" : ""
+                      }`}
+                    >
+                      <td className="py-3.5 px-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleSelectOne(inc.id)}
+                          className="rounded border-openboy-border text-[#ffd600] focus:ring-[#ffd600] bg-openboy-surface cursor-pointer w-3.5 h-3.5"
+                        />
+                      </td>
 
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <StatusBadge status={inc.status} />
-                    </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <StatusBadge status={inc.severity} />
+                      </td>
 
-                    <td className="py-3.5 px-4 font-sans max-w-xs">
-                      <div className="font-semibold text-openboy-text-main line-clamp-1">{inc.title}</div>
-                      <div className="text-[11px] text-openboy-text-muted font-mono truncate">{inc.service}</div>
-                    </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <StatusBadge status={inc.status} />
+                      </td>
 
-                    <td className="py-3.5 px-4 whitespace-nowrap text-openboy-text-muted">
-                      <div>{inc.duration}</div>
-                      <div className="text-[10px] text-openboy-text-dim">{inc.startedAt}</div>
-                    </td>
+                      <td className="py-3.5 px-4 font-sans max-w-xs">
+                        <div className="font-semibold text-openboy-text-main line-clamp-1">{inc.title}</div>
+                        <div className="text-[11px] text-openboy-text-muted font-mono truncate">{inc.service}</div>
+                      </td>
 
-                    <td className="py-3.5 px-4 font-sans max-w-sm text-openboy-text-muted">
-                      <div className="line-clamp-2 text-[11px] leading-relaxed">{inc.cause}</div>
-                    </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap text-openboy-text-muted">
+                        <div>{inc.duration}</div>
+                        <div className="text-[10px] text-openboy-text-dim">{inc.startedAt}</div>
+                      </td>
 
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {inc.status === "investigating" ? (
-                          <button
-                            type="button"
-                            onClick={() => promptResolve(inc)}
-                            className="px-2.5 py-1 rounded bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-sans font-semibold cursor-pointer transition-colors"
-                          >
-                            Resolve
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => promptDelete(inc)}
-                            className="p-1.5 text-openboy-text-muted hover:text-rose-500 hover:bg-openboy-surface-subtle rounded cursor-pointer transition-colors"
-                            title="Delete incident entry"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      <td className="py-3.5 px-4 font-sans max-w-sm text-openboy-text-muted">
+                        <div className="line-clamp-2 text-[11px] leading-relaxed">{inc.cause}</div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {inc.status === "investigating" ? (
+                            <button
+                              type="button"
+                              onClick={() => promptResolve(inc)}
+                              className="px-2.5 py-1 rounded bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-sans font-semibold cursor-pointer transition-colors"
+                            >
+                              Resolve
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => promptDelete(inc)}
+                              className="p-1.5 text-openboy-text-muted hover:text-rose-500 hover:bg-openboy-surface-subtle rounded cursor-pointer transition-colors"
+                              title="Delete incident entry"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Shareable Infinite Scroll Sentinel */}
+        {/* Infinite Scroll Sentinel */}
         <InfiniteScrollSentinel
           sentinelRef={loadSentinelRef}
           hasMore={hasMore}
@@ -384,108 +670,82 @@ export default function IncidentsPage() {
         />
       </div>
 
-      {/* Resolve Incident Modal Dialog */}
-      {resolveModal.isOpen && resolveModal.incident && (
+      {/* Confirmation Modal (Custom OpenBoy Design with Symmetrical Side-by-Side Buttons) */}
+      {modalConfig.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-openboy-surface border border-openboy-border rounded-2xl shadow-2xl overflow-hidden p-6 text-openboy-text-main space-y-5 transition-colors">
+          <div className="w-full max-w-md bg-openboy-surface border border-openboy-border rounded-2xl shadow-2xl overflow-hidden p-6 text-openboy-text-main space-y-5 transition-all">
+            {/* Modal Header */}
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shrink-0">
-                  <Check className="w-5 h-5 stroke-[2.5]" />
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    modalConfig.confirmStyle === "danger"
+                      ? "bg-rose-500/15 border border-rose-500/30 text-rose-500 dark:text-rose-400"
+                      : "bg-[#ffd600]/15 border border-[#ffd600]/30 text-[#ffd600]"
+                  }`}
+                >
+                  {<modalConfig.icon className="w-5 h-5" />}
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-openboy-text-main">Mark Incident as Resolved</h3>
-                  <p className="text-xs text-openboy-text-muted mt-0.5">Post-mortem will be timestamped.</p>
+                  <h3 className="text-base font-bold text-openboy-text-main">
+                    {modalConfig.title}
+                  </h3>
+                  <p className="text-[11px] font-mono text-openboy-text-muted mt-0.5">
+                    Incident Confirmation
+                  </p>
                 </div>
               </div>
+
               <button
                 type="button"
-                onClick={() => setResolveModal({ isOpen: false, incident: null })}
-                className="p-1 rounded-md text-openboy-text-muted hover:text-openboy-text-main hover:bg-openboy-surface-subtle transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                onClick={() => setModalConfig((prev) => ({ ...prev, isOpen: false }))}
+                className="p-1 rounded-md text-openboy-text-muted hover:text-openboy-text-main hover:bg-openboy-surface-hover transition-colors cursor-pointer disabled:opacity-50"
+                title="Close"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-3.5 bg-openboy-surface-subtle border border-openboy-border rounded-xl space-y-1 font-mono text-xs">
-              <div className="font-semibold text-openboy-text-main truncate">
-                {resolveModal.incident.title}
-              </div>
-              <div className="text-openboy-text-muted truncate text-[11px]">
-                {resolveModal.incident.service}
-              </div>
+            {/* Description Card */}
+            <div className="p-3.5 bg-openboy-surface-subtle border border-openboy-border rounded-xl text-xs text-openboy-text-muted leading-relaxed">
+              {modalConfig.description}
             </div>
 
-            <p className="text-xs text-openboy-text-muted leading-relaxed">
-              Confirming resolution will archive this active outage, calculate the final MTTR downtime duration, and notify on-call escalation channels.
-            </p>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
+            {/* Symmetrical Side-by-Side Buttons (Grid of Two: Cancel left, Action right) */}
+            <div className="grid grid-cols-2 gap-3 pt-1 w-full">
               <button
                 type="button"
-                onClick={() => setResolveModal({ isOpen: false, incident: null })}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main border border-openboy-border transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                onClick={() => setModalConfig((prev) => ({ ...prev, isOpen: false }))}
+                className="w-full py-2.5 px-4 text-xs font-semibold rounded-xl border border-openboy-border bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-openboy-text-main transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center text-center"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={confirmResolve}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-[#ffd600] hover:bg-[#eed000] text-black transition-all shadow-md cursor-pointer"
+                disabled={isSubmitting}
+                onClick={handleModalConfirm}
+                className={`w-full py-2.5 px-4 text-xs font-bold rounded-xl text-white transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 text-center ${
+                  modalConfig.confirmStyle === "danger"
+                    ? "bg-rose-600 hover:bg-rose-500 shadow-rose-600/20"
+                    : "bg-[#ffd600] hover:bg-[#eed000] text-black shadow-amber-500/20"
+                }`}
               >
-                Confirm Resolved
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Incident Modal Dialog */}
-      {deleteModal.isOpen && deleteModal.incident && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-openboy-surface border border-openboy-border rounded-2xl shadow-2xl overflow-hidden p-6 text-openboy-text-main space-y-5 transition-colors">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-500 shrink-0">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-openboy-text-main">Delete Incident Record</h3>
-                  <p className="text-xs text-openboy-text-muted mt-0.5">This action cannot be undone.</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setDeleteModal({ isOpen: false, incident: null })}
-                className="p-1 rounded-md text-openboy-text-muted hover:text-openboy-text-main hover:bg-openboy-surface-subtle transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-3.5 bg-openboy-surface-subtle border border-openboy-border rounded-xl space-y-1 font-mono text-xs">
-              <div className="font-semibold text-openboy-text-main truncate">
-                {deleteModal.incident.title}
-              </div>
-              <div className="text-openboy-text-muted truncate text-[11px]">
-                {deleteModal.incident.service}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setDeleteModal({ isOpen: false, incident: null })}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-main border border-openboy-border transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmDelete}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md cursor-pointer"
-              >
-                Delete Record
+                {isSubmitting ? (
+                  <>
+                    <OpenBoyLoader
+                      size="w-3.5 h-3.5"
+                      color={modalConfig.confirmStyle === "danger" ? "text-white" : "text-black"}
+                    />
+                    <span>Executing...</span>
+                  </>
+                ) : (
+                  <>
+                    {<modalConfig.icon className="w-3.5 h-3.5 shrink-0" />}
+                    <span className="truncate">{modalConfig.confirmText}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
