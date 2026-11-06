@@ -7,7 +7,6 @@ import {
   Trash2,
   RotateCw,
   Clock,
-  ShieldAlert,
   CheckCircle2,
   AlertTriangle,
   RotateCcw,
@@ -80,7 +79,7 @@ export default function DataManagementPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState("fresh-start"); // "fresh-start" | "retention" | "monitor" | "incidents"
+  const [activeTab, setActiveTab] = useState("fresh-start"); // "fresh-start" | "retention" | "monitor"
 
   // Notification Toast
   const [toast, setToast] = useState(null);
@@ -144,7 +143,6 @@ export default function DataManagementPage() {
 
   // Safe normalized numbers (handles both camelCase and snake_case from Go JSON)
   const totalLogs = Number(stats?.totalExecutionLogs ?? stats?.total_execution_logs ?? 0);
-  const totalIncidents = Number(stats?.totalIncidents ?? stats?.total_incidents ?? 0);
   const storageMb = Number(stats?.estimatedStorageMb ?? stats?.estimated_storage_mb ?? 0);
   const oldestDate = stats?.oldestLogTimestamp || stats?.oldest_log_timestamp || null;
   const newestDate = stats?.newestLogTimestamp || stats?.newest_log_timestamp || null;
@@ -160,7 +158,6 @@ export default function DataManagementPage() {
     { id: "fresh-start", label: "Fresh Start", icon: Sparkles },
     { id: "retention", label: "Retention Pruning", icon: Clock },
     { id: "monitor", label: "By Schedule", icon: Layers },
-    { id: "incidents", label: "Incident Records", icon: ShieldAlert },
   ];
 
   // 1. Fresh Start Handler: Purge All Logs (+ optionally reset counters)
@@ -265,31 +262,6 @@ export default function DataManagementPage() {
     });
   };
 
-  // 5. Incident Pruning Handler
-  const promptClearIncidents = (statusOnly = "resolved") => {
-    const isResolvedOnly = statusOnly === "resolved";
-    setModalConfig({
-      isOpen: true,
-      title: isResolvedOnly ? "Purge Resolved Incidents" : "Purge All Incident Logs",
-      description: isResolvedOnly
-        ? "Permanently delete resolved incidents from the database. Ongoing outages remain untouched."
-        : "Permanently delete all incident records across the system.",
-      confirmText: isResolvedOnly ? "Purge Resolved Only" : "Purge All Incidents",
-      confirmStyle: isResolvedOnly ? "warning" : "danger",
-      icon: ShieldAlert,
-      action: async () => {
-        const res = await maintenanceService.clearIncidents(isResolvedOnly ? "resolved" : "");
-        await loadStats();
-        setToast({
-          type: "success",
-          message: `Cleared ${Number(res?.cleared ?? 0).toLocaleString()} ${
-            isResolvedOnly ? "resolved" : ""
-          } incident records.`,
-        });
-      },
-    });
-  };
-
   // Execute confirmed modal action
   const handleModalConfirm = async () => {
     if (!modalConfig.action) return;
@@ -359,11 +331,11 @@ export default function DataManagementPage() {
         </div>
       )}
 
-      {/* Telemetry Strip: Responsive Grid of Two on Phones (grid-cols-2 lg:grid-cols-4) */}
+      {/* Telemetry Strip: 3 Clean High-Availability Metric Cards */}
       {isLoadingStats ? (
-        <MetricCardsSkeleton count={4} />
+        <MetricCardsSkeleton count={3} />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
           <MetricCard
             title="Total Runs Stored"
             value={totalLogs.toLocaleString()}
@@ -383,12 +355,6 @@ export default function DataManagementPage() {
             icon={Clock}
             subtitle={newestDate ? `Latest: ${formatDate(newestDate)}` : "Earliest log"}
           />
-          <MetricCard
-            title="Incidents Stored"
-            value={totalIncidents.toLocaleString()}
-            icon={ShieldAlert}
-            subtitle="Outage incident logs"
-          />
         </div>
       )}
 
@@ -406,7 +372,7 @@ export default function DataManagementPage() {
               </span>
             </div>
             <p className="text-[11px] text-openboy-text-muted mt-0.5">
-              All execution runs are automatically cleared at midnight (00:00) before every new day begins; incidents are safely preserved.
+              All execution runs are automatically cleared at midnight (00:00) before every new day begins to keep database performance optimal.
             </p>
           </div>
         </div>
@@ -417,8 +383,8 @@ export default function DataManagementPage() {
         </div>
       </div>
 
-      {/* Mode Navigation: Responsive Grid of Two on Phones (grid-cols-2 sm:grid-cols-4) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 w-full">
+      {/* Mode Navigation: Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5 w-full">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
@@ -664,54 +630,6 @@ export default function DataManagementPage() {
                 >
                   <RotateCcw className="w-3.5 h-3.5 text-openboy-text-muted" />
                   <span>Reset SLA Baseline to 100%</span>
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* TAB 4: INCIDENTS */}
-        {activeTab === "incidents" && (
-          <Card className="border-openboy-border w-full">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle>
-                  <ShieldAlert className="w-4 h-4 text-purple-400" />
-                  <span>Incident Audit Records</span>
-                </CardTitle>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 font-medium">
-                  Incidents
-                </span>
-              </div>
-              <CardDescription>
-                Clear resolved or archived outage records once service incidents have been resolved.
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-6 pt-5">
-              <div className="p-3.5 rounded-xl bg-openboy-surface-subtle border border-openboy-border text-xs flex items-center justify-between w-full">
-                <span className="text-openboy-text-muted">Total Stored Incident Reports:</span>
-                <span className="font-mono font-bold text-openboy-text-main">
-                  {totalIncidents.toLocaleString()} records
-                </span>
-              </div>
-
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => promptClearIncidents("resolved")}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-purple-600 hover:bg-purple-500 text-white transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Purge Resolved Incidents Only</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => promptClearIncidents("")}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-rose-900/50 hover:bg-rose-950/30 text-rose-400 transition-colors cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Purge All Incidents</span>
                 </button>
               </div>
             </CardContent>

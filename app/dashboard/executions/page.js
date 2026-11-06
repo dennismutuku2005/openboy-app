@@ -666,10 +666,10 @@ function ExecutionsContent() {
         />
 
         <MetricCard
-          title="Failures / Incidents"
+          title="Failures / Errors"
           value={errorCount}
           valueColor={errorCount > 0 ? "text-rose-500 dark:text-rose-400" : "text-openboy-text-muted"}
-          subtitle={errorCount > 0 ? "Requires investigation" : "0 active outages"}
+          subtitle={errorCount > 0 ? "Failed requests" : "0 failed requests"}
           icon={ShieldAlert}
         />
 

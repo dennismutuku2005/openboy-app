@@ -36,17 +36,5 @@ export const maintenanceService = {
     const qs = query.toString() ? `?${query.toString()}` : "";
     return api.post(`/maintenance/reset-monitors${qs}`);
   },
-
-  /**
-   * Clears incident records, optionally filtered by status (e.g. "resolved").
-   */
-  async clearIncidents(status = "") {
-    const query = new URLSearchParams();
-    if (status) {
-      query.set("status", status);
-    }
-    const qs = query.toString() ? `?${query.toString()}` : "";
-    return api.delete(`/incidents${qs}`);
-  },
 };
 

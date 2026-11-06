@@ -120,7 +120,7 @@ export default function UptimePage() {
         />
 
         <MetricCard
-          title="Incident Rate (30d)"
+          title="Failure Rate (30d)"
           value={stats?.successRate ? `${Math.max(0, 100 - parseFloat(stats.successRate || "100")).toFixed(2)}%` : "0.00%"}
           trend={stats?.successRate ? `${stats.successRate} availability` : "High availability"}
           trendType="success"
@@ -209,7 +209,7 @@ export default function UptimePage() {
                           return (
                             <div
                               key={i}
-                              title={`Day ${i + 1}: ${isFailingDay ? "Incident (503 Error)" : "100% Operational"}`}
+                              title={`Day ${i + 1}: ${isFailingDay ? "Failure (Error Status)" : "100% Operational"}`}
                               className={`flex-1 h-full rounded-2xs ${
                                 isFailingDay ? "bg-rose-500" : "bg-emerald-500/80"
                               }`}

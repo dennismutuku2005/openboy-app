@@ -12,7 +12,6 @@ import {
   Layers,
   AlertTriangle,
   History,
-  ShieldAlert,
   Server,
   Loader2,
   X,
@@ -42,7 +41,6 @@ export default function DashboardSidebar() {
     { href: "/dashboard/executions", label: "Executions", icon: History },
     { href: "/dashboard/uptime", label: "Uptime SLA", icon: Activity },
     { href: "/dashboard/batchers", label: "Batchers", icon: Server },
-    { href: "/dashboard/incidents", label: "Incidents", icon: ShieldAlert },
     { href: "/dashboard/data-management", label: "Data Management", icon: Database },
     { href: "/dashboard/profile", label: "Profile", icon: User },
   ];
@@ -152,11 +150,6 @@ export default function DashboardSidebar() {
                   {item.href === "/dashboard" && (
                     <span className="text-[11px] px-2 py-0.5 rounded bg-openboy-surface-subtle text-openboy-text-muted font-mono border border-openboy-border">
                       {monitors.length}
-                    </span>
-                  )}
-                  {item.href === "/dashboard/incidents" && errorCount > 0 && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-500 dark:text-rose-300 font-mono font-bold">
-                      {errorCount}
                     </span>
                   )}
                 </Link>
