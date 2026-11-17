@@ -68,6 +68,21 @@ const scheduleTemplates = [
   },
 ];
 
+/**
+ * Computes deterministic FNV-1a phase offset for a monitor ID across its interval window.
+ * Matches backend `models.ComputeMonitorOffset` in Go.
+ */
+function getMonitorOffset(monitorId, intervalSec) {
+  if (!intervalSec || intervalSec <= 1) return 0;
+  if (!monitorId) return 0;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < monitorId.length; i++) {
+    hash ^= monitorId.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0) % intervalSec;
+}
+
 export default function DashboardMainPage() {
   const router = useRouter();
   const {
@@ -106,25 +121,43 @@ export default function DashboardMainPage() {
     setVisibleCount(12);
   }, [activeFilter, searchQuery]);
 
-  // Live countdown timer for active monitors
+  // Live staggered countdown timer synchronized with backend phase offsets
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdowns((prev) => {
-        const next = { ...prev };
-        monitors.forEach((m) => {
-          if (m.status !== "paused") {
-            const current = next[m.id] !== undefined ? next[m.id] : m.intervalSeconds;
-            if (current <= 1) {
-              next[m.id] = m.intervalSeconds;
-            } else {
-              next[m.id] = current - 1;
-            }
-          }
-        });
-        return next;
-      });
-    }, 1000);
+    const updateCountdowns = () => {
+      const nowUnix = Math.floor(Date.now() / 1000);
+      const next = {};
 
+      monitors.forEach((m) => {
+        if (m.status === "paused") {
+          next[m.id] = null;
+          return;
+        }
+
+        if (m.cronExpr || m.interval === "cron") {
+          next[m.id] = null;
+          return;
+        }
+
+        const interval = m.intervalSeconds || 30;
+        const offset =
+          m.offsetSeconds !== undefined
+            ? m.offsetSeconds
+            : getMonitorOffset(m.id, interval);
+
+        // Calculate seconds remaining in the staggered cycle anchored to the offset
+        const secInCycle = ((nowUnix % interval) + interval) % interval;
+        let remaining = (offset - secInCycle + interval) % interval;
+        if (remaining === 0) {
+          remaining = interval;
+        }
+        next[m.id] = remaining;
+      });
+
+      setCountdowns(next);
+    };
+
+    updateCountdowns();
+    const timer = setInterval(updateCountdowns, 1000);
     return () => clearInterval(timer);
   }, [monitors]);
 
@@ -404,9 +437,17 @@ export default function DashboardMainPage() {
                           {/* Next Run Countdown */}
                           <td className="py-3.5 px-4 whitespace-nowrap font-mono text-openboy-text-muted">
                             {!isPaused ? (
-                              <span className="text-openboy-text-main font-bold">
-                                in {countdown}s
-                              </span>
+                              countdown === null ? (
+                                <span className="text-openboy-text-dim">cron</span>
+                              ) : countdown <= 1 ? (
+                                <span className="text-[#ffd600] font-bold animate-pulse">
+                                  in 1s
+                                </span>
+                              ) : (
+                                <span className="text-openboy-text-main font-bold">
+                                  in {countdown}s
+                                </span>
+                              )
                             ) : (
                               <span className="text-openboy-text-dim">paused</span>
                             )}
