@@ -205,18 +205,18 @@ export default function DashboardSidebar() {
         </div>
 
         {/* Bottom Section: Operator Profile & Logout */}
-        <div className="p-4 border-t border-openboy-border bg-openboy-surface-subtle space-y-3">
+        <div className="p-4 border-t border-openboy-border bg-openboy-surface-subtle flex flex-col gap-4">
 
           <Link
             href="/dashboard/profile"
             onClick={() => setIsMobileSidebarOpen(false)}
-            className="flex items-center gap-3 p-1.5 -m-1.5 rounded-lg hover:bg-openboy-surface-hover transition-colors cursor-pointer group"
+            className="flex items-center gap-3 p-1.5 -mx-1.5 rounded-lg hover:bg-openboy-surface-hover transition-colors cursor-pointer group"
             title="Manage Operator Profile & Security"
           >
             <div suppressHydrationWarning className="w-9 h-9 rounded-full bg-openboy-surface border border-openboy-border group-hover:border-[#ffd600] flex items-center justify-center font-bold text-sm text-[#ffd600] transition-colors shadow-2xs">
               {(currentUser?.name || currentUser?.username || "A").slice(0, 1).toUpperCase()}
             </div>
-            <div className="overflow-hidden flex-1">
+            <div className="min-w-0 flex-1 overflow-hidden">
               <div suppressHydrationWarning className="text-xs font-semibold text-openboy-text-main truncate group-hover:text-[#ffd600] transition-colors">
                 {currentUser?.name || currentUser?.username || "admin"}
               </div>
@@ -230,7 +230,7 @@ export default function DashboardSidebar() {
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full py-2.5 px-4 rounded-lg border border-openboy-border bg-openboy-surface hover:bg-rose-500/10 text-openboy-text-muted hover:text-rose-500 transition-colors cursor-pointer flex items-center justify-center text-xs font-semibold disabled:opacity-60"
+            className="w-full py-2.5 px-4 rounded-lg border border-openboy-border bg-openboy-surface hover:bg-rose-500/10 text-openboy-text-muted hover:text-rose-500 transition-colors cursor-pointer flex items-center justify-center text-xs font-semibold"
           >
             <span>Sign out</span>
           </button>
