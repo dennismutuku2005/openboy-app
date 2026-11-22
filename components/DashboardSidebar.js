@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -13,7 +12,6 @@ import {
   AlertTriangle,
   History,
   Server,
-  Loader2,
   X,
   User,
   Database,
@@ -33,8 +31,6 @@ export default function DashboardSidebar() {
     isMobileSidebarOpen,
     setIsMobileSidebarOpen,
   } = useDashboard();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   // Professional cron system core pages
   const mainNav = [
     { href: "/dashboard", label: "Schedules", icon: Clock },
@@ -54,10 +50,7 @@ export default function DashboardSidebar() {
   const errorCount = logs.filter((l) => !l.ok || (l.status && l.status >= 400)).length;
 
   const handleLogout = () => {
-    setIsLoggingOut(true);
-    setTimeout(() => {
-      logout();
-    }, 350);
+    logout();
   };
 
   return (
@@ -237,14 +230,9 @@ export default function DashboardSidebar() {
           <button
             type="button"
             onClick={handleLogout}
-            disabled={isLoggingOut}
             className="w-full py-2.5 px-4 rounded-lg border border-openboy-border bg-openboy-surface hover:bg-rose-500/10 text-openboy-text-muted hover:text-rose-500 transition-colors cursor-pointer flex items-center justify-center text-xs font-semibold disabled:opacity-60"
           >
-            {isLoggingOut ? (
-              <Loader2 className="w-4 h-4 animate-spin text-[#ffd600]" />
-            ) : (
-              <span>Sign out</span>
-            )}
+            <span>Sign out</span>
           </button>
         </div>
       </aside>

@@ -62,7 +62,7 @@ export const authService = {
     if (typeof window !== "undefined") {
       localStorage.removeItem("openboy_jwt");
       localStorage.removeItem("openboy_user");
-      window.location.href = "/login";
+      window.location.replace("/login");
     }
   },
 

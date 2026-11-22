@@ -94,6 +94,17 @@ export function DashboardProvider({ children }) {
     };
   }, [router]);
 
+  useEffect(() => {
+    const handlePageShow = () => {
+      if (!authService.isAuthenticated()) {
+        authService.logout();
+      }
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
+
   // 2. Realtime SSE Live Stream Subscriber
   useEffect(() => {
     const unsubscribe = executionService.subscribeLiveStream(
