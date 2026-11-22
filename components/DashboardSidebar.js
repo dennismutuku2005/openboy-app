@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -20,6 +21,7 @@ import { useDashboard } from "./DashboardContext";
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const {
     monitors,
     logs,
@@ -50,7 +52,7 @@ export default function DashboardSidebar() {
   const errorCount = logs.filter((l) => !l.ok || (l.status && l.status >= 400)).length;
 
   const handleLogout = () => {
-    logout();
+    setIsLogoutDialogOpen(true);
   };
 
   return (
@@ -236,6 +238,67 @@ export default function DashboardSidebar() {
           </button>
         </div>
       </aside>
+
+      {isLogoutDialogOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsLogoutDialogOpen(false);
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-dialog-title"
+            aria-describedby="logout-dialog-description"
+            className="w-full max-w-sm bg-openboy-surface border border-openboy-border rounded-2xl shadow-2xl p-6 text-openboy-text-main space-y-5"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-500 dark:text-rose-400 shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 id="logout-dialog-title" className="text-base font-bold text-openboy-text-main">
+                    Sign out?
+                  </h2>
+                  <p id="logout-dialog-description" className="text-xs text-openboy-text-muted mt-0.5">
+                    Are you sure you want to sign out of OpenBoy?
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLogoutDialogOpen(false)}
+                aria-label="Close sign-out confirmation"
+                className="p-1 rounded-md text-openboy-text-muted hover:text-openboy-text-main hover:bg-openboy-surface-hover transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setIsLogoutDialogOpen(false)}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-lg text-xs font-semibold bg-openboy-surface-subtle hover:bg-openboy-surface-hover text-openboy-text-muted hover:text-openboy-text-main border border-openboy-border transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={logout}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition-colors cursor-pointer"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
