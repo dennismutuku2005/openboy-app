@@ -78,7 +78,7 @@ export default function LoginPage() {
           <ThemeToggle variant="compact" />
         </div>
 
-        <div className="w-full max-w-[420px]">
+        <div className="w-full max-w-105">
           <div className="flex flex-col items-center mb-8">
             <Image
               src="/logos/logo.png"
