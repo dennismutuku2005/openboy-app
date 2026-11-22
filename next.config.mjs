@@ -6,6 +6,7 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
+    agentUpgrade: "security",
     agentFeedback: true,
   },
   turbopack: {
