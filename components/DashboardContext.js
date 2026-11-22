@@ -6,6 +6,7 @@ import { useTheme } from "./ThemeProvider";
 import { authService } from "@/services/authService";
 import { monitorService } from "@/services/monitorService";
 import { executionService } from "@/services/executionService";
+import LogoLoadingScreen from "./LogoLoadingScreen";
 
 const DashboardContext = createContext(null);
 
@@ -378,7 +379,7 @@ export function DashboardProvider({ children }) {
         isDark,
       }}
     >
-      {children}
+      {isLoadingAuth ? <LogoLoadingScreen /> : children}
     </DashboardContext.Provider>
   );
 }

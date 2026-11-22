@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Lock, User, AlertCircle, Loader2 } from "lucide-react";
+import { Lock, User, AlertCircle } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import LogoLoadingScreen from "@/components/LogoLoadingScreen";
 import { authService } from "@/services/authService";
 
 export default function LoginPage() {
@@ -42,10 +43,12 @@ export default function LoginPage() {
     }
 
     setIsSubmitting(true);
+    let loginSucceeded = false;
 
     try {
       const data = await authService.login(username.trim(), password.trim());
       if (data?.token) {
+        loginSucceeded = true;
         router.replace("/dashboard");
       } else {
         throw new Error("Login failed: no token received from engine.");
@@ -53,7 +56,9 @@ export default function LoginPage() {
     } catch (err) {
       setError(err.message || "Failed to authenticate with OpenBoy Engine.");
     } finally {
-      setIsSubmitting(false);
+      if (!loginSucceeded) {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -62,17 +67,18 @@ export default function LoginPage() {
     setPassword(pass);
   };
 
-  return (
-    <div className="min-h-screen w-full bg-openboy-bg flex flex-col items-center justify-center py-12 px-4 selection:bg-[#ffd600] selection:text-black relative transition-colors duration-200">
-      {/* Theme Toggle in Top Right */}
-      <div className="absolute top-5 right-5 sm:top-6 sm:right-6">
-        <ThemeToggle variant="compact" />
-      </div>
+  if (isSubmitting) {
+    return <LogoLoadingScreen />;
+  }
 
-      {/* Centered Card with generous height */}
-      <div className="w-full max-w-[460px] bg-white dark:bg-openboy-surface rounded-2xl shadow-2xl p-10 sm:p-12 border border-zinc-200/80 dark:border-openboy-border relative min-h-[640px] flex flex-col justify-between transition-colors duration-200">
-        {/* Top Brand Header: Pure Logo */}
-        <div>
+  return (
+    <main className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-[25%_75%] bg-white dark:bg-openboy-bg selection:bg-[#ffd600] selection:text-black">
+      <section className="relative min-h-screen flex items-center justify-center px-6 py-16 transition-colors duration-200">
+        <div className="absolute top-5 right-5 sm:top-6 sm:right-6">
+          <ThemeToggle variant="compact" />
+        </div>
+
+        <div className="w-full max-w-[420px]">
           <div className="flex flex-col items-center mb-8">
             <Image
               src="/logos/logo.png"
@@ -139,34 +145,39 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Electric Yellow Continue Button with Loading Spinner */}
+            {/* Electric Yellow Continue Button */}
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 px-6 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center cursor-pointer active:scale-[0.99] disabled:opacity-80"
+                className="w-full py-3.5 px-6 bg-[#ffd600] hover:bg-[#eed000] text-black font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center cursor-pointer active:scale-[0.99]"
               >
-                {isSubmitting ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-black" />
-                ) : (
-                  <span>Continue</span>
-                )}
+                <span>Continue</span>
               </button>
             </div>
           </form>
-        </div>
 
-        {/* Bottom Section with Helper */}
-        <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-openboy-border flex items-center justify-center text-xs text-zinc-500 dark:text-openboy-text-muted">
-          <button
-            type="button"
-            onClick={() => handleQuickLogin("admin", "openboy2026")}
-            className="text-amber-600 dark:text-amber-400 hover:underline font-semibold cursor-pointer"
-          >
-            Auto-fill credentials
-          </button>
+          <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-openboy-border flex items-center justify-center text-xs text-zinc-500 dark:text-openboy-text-muted">
+            <button
+              type="button"
+              onClick={() => handleQuickLogin("admin", "openboy2026")}
+              className="text-amber-600 dark:text-amber-400 hover:underline font-semibold cursor-pointer"
+            >
+              Auto-fill credentials
+            </button>
+          </div>
         </div>
+      </section>
+
+      <div className="hidden lg:block relative min-h-screen overflow-hidden">
+        <Image
+          src="/images/sideimage.png"
+          alt=""
+          fill
+          priority
+          sizes="75vw"
+          className="object-cover"
+        />
       </div>
-    </div>
+    </main>
   );
 }

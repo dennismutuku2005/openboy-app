@@ -7,7 +7,7 @@ export function ThemeProvider({ children, ...props }) {
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="dark"
+      defaultTheme="light"
       enableSystem={false}
       storageKey="openboy_theme"
       {...props}
@@ -25,7 +25,7 @@ export function useTheme() {
     setMounted(true);
   }, []);
 
-  const currentTheme = mounted ? (nextTheme.theme || nextTheme.resolvedTheme || "dark") : "dark";
+  const currentTheme = mounted ? (nextTheme.theme || nextTheme.resolvedTheme || "light") : "light";
   const isDark = currentTheme === "dark";
 
   const toggleTheme = () => {

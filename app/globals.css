@@ -3,30 +3,6 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root,
-html.dark,
-.dark,
-[data-theme="dark"] {
-  --openboy-bg: #12150c;
-  --openboy-surface: #181c12;
-  --openboy-surface-hover: #222817;
-  --openboy-surface-card: #1a1f13;
-  --openboy-surface-subtle: #14170e;
-  --openboy-border: #273019;
-  --openboy-border-light: #384328;
-  --openboy-yellow: #ffd600;
-  --openboy-yellow-hover: #eed000;
-  --openboy-yellow-text: #ffd600;
-  --openboy-yellow-text-hover: #eed000;
-  --openboy-mint: #4ade80;
-  --openboy-text-main: #f5f6f0;
-  --openboy-text-muted: #9ba187;
-  --openboy-text-dim: #6b7359;
-  --openboy-scrollbar-track: #12150c;
-  --openboy-scrollbar-thumb: #273019;
-  --openboy-scrollbar-thumb-hover: #384328;
-  color-scheme: dark;
-}
-
 html.light,
 .light,
 [data-theme="light"] {
@@ -49,6 +25,30 @@ html.light,
   --openboy-scrollbar-thumb: #d7dfcc;
   --openboy-scrollbar-thumb-hover: #b5c2a4;
   color-scheme: light;
+}
+
+html.dark,
+.dark,
+[data-theme="dark"] {
+  --openboy-bg: #12150c;
+  --openboy-surface: #181c12;
+  --openboy-surface-hover: #222817;
+  --openboy-surface-card: #1a1f13;
+  --openboy-surface-subtle: #14170e;
+  --openboy-border: #273019;
+  --openboy-border-light: #384328;
+  --openboy-yellow: #ffd600;
+  --openboy-yellow-hover: #eed000;
+  --openboy-yellow-text: #ffd600;
+  --openboy-yellow-text-hover: #eed000;
+  --openboy-mint: #4ade80;
+  --openboy-text-main: #f5f6f0;
+  --openboy-text-muted: #9ba187;
+  --openboy-text-dim: #6b7359;
+  --openboy-scrollbar-track: #12150c;
+  --openboy-scrollbar-thumb: #273019;
+  --openboy-scrollbar-thumb-hover: #384328;
+  color-scheme: dark;
 }
 
 @theme inline {
